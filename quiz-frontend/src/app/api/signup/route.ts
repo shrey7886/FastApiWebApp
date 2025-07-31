@@ -3,40 +3,39 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password, first_name, last_name, tenant_id } = body;
+    const { email, password, tenant_id, first_name, last_name } = body;
 
-    // Validate input
-    if (!email || !password || !first_name || !last_name || !tenant_id) {
+    // Simple mock registration for demo purposes
+    // In production, you would save to a real database
+    if (email && password && tenant_id) {
+      // Generate a mock token
+      const token = `mock_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const user = {
+        id: Date.now(),
+        email: email,
+        first_name: first_name || email.split('@')[0],
+        last_name: last_name || '',
+        tenant_id: tenant_id,
+        is_active: true,
+        created_at: new Date().toISOString()
+      };
+
+      return NextResponse.json({
+        access_token: token,
+        user: user,
+        message: 'Registration successful'
+      });
+    } else {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { detail: 'Missing required fields' },
         { status: 400 }
       );
     }
-
-    // For Vercel deployment, we'll use a simple user creation
-    // In production, you'd hash the password and store in a database
-    
-    const user = {
-      id: Date.now().toString(),
-      email,
-      first_name,
-      last_name,
-      tenant_id,
-      created_at: new Date().toISOString()
-    };
-
-    // Generate a simple token (in production, use JWT)
-    const token = btoa(JSON.stringify({ userId: user.id, email }));
-
-    return NextResponse.json({
-      user,
-      access_token: token,
-      message: 'User created successfully'
-    });
   } catch (error) {
     console.error('Signup error:', error);
     return NextResponse.json(
-      { error: 'Failed to create user' },
+      { detail: 'Internal server error' },
       { status: 500 }
     );
   }

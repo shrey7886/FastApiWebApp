@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { generateQuiz } from './api'
 import { useUser } from './UserContext'
+import { useRouter } from 'next/navigation';
 
 interface QuizGeneratorProps {
   onQuizGenerated: (quiz: any) => void
@@ -10,6 +11,7 @@ interface QuizGeneratorProps {
 
 export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
   const { user, token } = useUser();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     topic: '',
     num_questions: 5,
@@ -77,39 +79,39 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validate topic input
-    if (!formData.topic.trim()) {
-      setError('Please enter a topic for your quiz')
-      return
-    }
-    
-    // Ensure tenant_id is set
-    const finalTenantId = formData.tenant_id || user?.tenant_id || 'default';
-    
-    console.log('🔍 Form validation - Topic:', formData.topic);
-    console.log('🔍 Form validation - Tenant ID:', finalTenantId);
-    
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
     try {
-      const quiz = await generateQuiz({
+      console.log('🚀 Starting quiz generation...');
+      console.log('📋 Form data:', formData);
+
+      // Call the API with the correct structure
+      const quizData = await generateQuiz({
         topic: formData.topic.trim(),
         difficulty: formData.difficulty,
         num_questions: formData.num_questions,
         duration: formData.duration,
-        tenant_id: finalTenantId,
+        tenant_id: user?.tenant_id || 'default',
         token: token || undefined
-      })
-      onQuizGenerated(quiz)
+      });
+
+      console.log('✅ Quiz generated successfully:', quizData);
+
+      // Navigate to the quiz taking page
+      if (quizData.id) {
+        router.push(`/take-quiz/${quizData.id}`);
+      } else {
+        throw new Error('No quiz ID returned from server');
+      }
     } catch (err: any) {
-      console.error('Quiz generation error:', err)
-      setError(err.message || 'Failed to generate quiz. Please try again.')
+      console.error('❌ Quiz generation failed:', err);
+      setError(err.message || 'Failed to generate quiz. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

@@ -7,8 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Send, Brain, TrendingUp, History, BookOpen, Target, Zap } from 'lucide-react';
+import { 
+  Send, 
+  Brain, 
+  TrendingUp, 
+  History, 
+  BookOpen, 
+  Target, 
+  Zap, 
+  Trophy,
+  Clock,
+  BarChart3,
+  Award,
+  Star,
+  ArrowRight,
+  Play,
+  Calendar,
+  Users,
+  Activity
+} from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { useUser } from '@/components/UserContext';
 
 interface PerformanceData {
   totalAttempts: number;
@@ -35,6 +54,7 @@ interface QuestionReview {
 
 export default function Dashboard() {
   const router = useRouter();
+  const { user } = useUser();
   const [performance, setPerformance] = useState<PerformanceData>({
     totalAttempts: 0,
     averageScore: 0,
@@ -77,13 +97,13 @@ export default function Dashboard() {
 
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
-        const formattedAttempts = historyData.map((quiz: any) => ({
-          id: quiz.id,
+        const formattedAttempts = historyData.history?.map((quiz: any) => ({
+          id: quiz.quiz_id,
           score: quiz.score,
           totalQuestions: quiz.total_questions,
           completedOn: new Date(quiz.completed_at).toLocaleDateString(),
           percentage: Math.round((quiz.score / quiz.total_questions) * 100)
-        }));
+        })) || [];
         setAttempts(formattedAttempts);
       }
 
@@ -102,59 +122,25 @@ export default function Dashboard() {
     
     // Add user message to chat
     setChatHistory(prev => [...prev, { type: 'user', message: userMessage }]);
-
-    try {
-      const response = await fetch('/api/chatbot/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          context: {
-            performance: performance,
-            recent_attempts: attempts.slice(0, 3)
-          }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setChatHistory(prev => [...prev, { type: 'ai', message: data.answer }]);
-      } else {
-        setChatHistory(prev => [...prev, { 
-          type: 'ai', 
-          message: "I'm having trouble processing your request right now. Please try asking about quiz topics, study tips, or how to use the platform." 
-        }]);
-      }
-    } catch (error) {
-      console.error('Chat error:', error);
-      setChatHistory(prev => [...prev, { 
-        type: 'ai', 
-        message: "I'm having trouble connecting right now. Please try again later." 
-      }]);
-    }
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const aiResponse = `I'm here to help you with your learning journey! You can ask me about quiz topics, study strategies, or any questions you have.`;
+      setChatHistory(prev => [...prev, { type: 'ai', message: aiResponse }]);
+    }, 1000);
   };
 
-  const relatedTopics = [
-    'Advanced Concepts',
-    'Practical Applications', 
-    'Common Mistakes',
-    'Best Practices',
-    'Real-world Examples',
-    'Related Technologies'
-  ];
+  const relatedTopics = ['Algebra', 'Calculus', 'Statistics', 'Geometry', 'Trigonometry'];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-800 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="h-24 bg-gray-800 rounded"></div>
-            <div className="h-24 bg-gray-800 rounded"></div>
-            <div className="h-24 bg-gray-800 rounded"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -162,235 +148,305 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-xl font-bold">Quizlet</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Learn • Practice • Excel</p>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Welcome back, {user?.first_name || 'Learner'}! 👋
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
+                Ready to continue your learning journey?
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => router.push('/create-quiz')}
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Start New Quiz
+              </Button>
+              <ThemeToggle />
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => router.push('/topics')}
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Topics
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              <History className="w-4 h-4 mr-2" />
-              History
-            </Button>
-            <ThemeToggle />
-            <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-4 space-y-6">
-        {/* Performance Overview */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-blue-400" />
-              <h2 className="text-xl font-semibold">Performance Overview</h2>
-            </div>
-            <Button
-              onClick={() => router.push('/question-history')}
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              View Question History
-            </Button>
-          </div>
-                  <div className="grid grid-cols-3 gap-4">
-          <Card className="bg-blue-500 dark:bg-blue-600 border-blue-400 dark:border-blue-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-white">{performance.totalAttempts}</div>
-              <div className="text-sm text-blue-100 dark:text-blue-200">Total Attempts</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-500 dark:bg-green-600 border-green-400 dark:border-green-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-white">{performance.averageScore}%</div>
-              <div className="text-sm text-green-100 dark:text-green-200">Average Score</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-500 dark:bg-purple-600 border-purple-400 dark:border-purple-500">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-white">{performance.bestScore}%</div>
-              <div className="text-sm text-purple-100 dark:text-purple-200">Best Score</div>
-            </CardContent>
-          </Card>
-        </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <Tabs defaultValue="questions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-800">
-            <TabsTrigger value="questions" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-              Questions Review
-            </TabsTrigger>
-            <TabsTrigger value="topics" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-              Related Topics
-            </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700">
-              Attempt History
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="questions" className="mt-4">
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle>Question Breakdown</CardTitle>
-                <p className="text-gray-500 dark:text-gray-400">Review all questions from this quiz</p>
-              </CardHeader>
-              <CardContent>
-                {questions.length > 0 ? (
-                  <div className="space-y-4">
-                    {questions.map((question, index) => (
-                      <div key={question.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <p className="font-medium mb-2">{question.question}</p>
-                        <div className="space-y-2">
-                          <div className={`p-2 rounded ${question.isCorrect ? 'bg-green-500 dark:bg-green-600' : 'bg-red-500 dark:bg-red-600'}`}>
-                            <span className="font-medium text-white">Your Answer:</span> <span className="text-white">{question.userAnswer}</span>
-                            {question.isCorrect ? ' ✓' : ' ✗'}
-                          </div>
-                          {!question.isCorrect && (
-                            <div className="p-2 rounded bg-green-500 dark:bg-green-600">
-                              <span className="font-medium text-white">Correct Answer:</span> <span className="text-white">{question.correctAnswer}</span>
-                            </div>
-                          )}
-                          <div className="p-2 rounded bg-blue-500 dark:bg-blue-600">
-                            <span className="font-medium text-white">Explanation:</span> <span className="text-white">{question.explanation}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No questions to review yet. Take a quiz to see your breakdown!</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="topics" className="mt-4">
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle>Related Topics</CardTitle>
-                <p className="text-gray-500 dark:text-gray-400">Explore topics related to Mathematics</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {relatedTopics.map((topic) => (
-                    <Button key={topic} variant="outline" className="bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      {topic}
-                    </Button>
-                  ))}
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Total Quizzes</p>
+                  <p className="text-3xl font-bold">{performance.totalAttempts}</p>
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2">Advanced Concepts</h3>
-                  <p className="text-gray-600 dark:text-gray-300">Advanced mathematics builds upon fundamental principles and extends into complex problem-solving techniques that require deep understanding and practice.</p>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="history" className="mt-4">
-            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader>
-                <CardTitle>Attempt History</CardTitle>
-                <p className="text-gray-500 dark:text-gray-400">Review all your past attempts for this quiz</p>
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">Average Score</p>
+                  <p className="text-3xl font-bold">{performance.averageScore}%</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Best Score</p>
+                  <p className="text-3xl font-bold">{performance.bestScore}%</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardContent className="p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm font-medium">Study Streak</p>
+                  <p className="text-3xl font-bold">7 days</p>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Activity className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Recent Activity & Quick Actions */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Recent Quiz Attempts */}
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl font-semibold flex items-center">
+                    <History className="w-5 h-5 mr-2 text-blue-600" />
+                    Recent Activity
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push('/question-history')}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    View All
+                    <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {attempts.length > 0 ? (
-                  <div className="space-y-3">
-                    {attempts.map((attempt) => (
-                      <div key={attempt.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div>
-                          <div className="font-medium">Score: {attempt.score} / {attempt.totalQuestions}</div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">Completed on: {attempt.completedOn}</div>
+                  <div className="space-y-4">
+                    {attempts.slice(0, 5).map((attempt, index) => (
+                      <div key={attempt.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-blue-900/20 rounded-xl border border-gray-100 dark:border-gray-600">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">Quiz #{attempt.id}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{attempt.completedOn}</p>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300">
-                          {attempt.percentage}%
-                        </Badge>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-900 dark:text-white">{attempt.score}/{attempt.totalQuestions}</p>
+                          <Badge className={`mt-1 ${
+                            attempt.percentage >= 80 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            attempt.percentage >= 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                          }`}>
+                            {attempt.percentage}%
+                          </Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No quiz attempts yet. Start your learning journey!</p>
+                  <div className="text-center py-8">
+                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 dark:text-gray-400">No quiz attempts yet. Start your first quiz!</p>
+                    <Button
+                      onClick={() => router.push('/create-quiz')}
+                      className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                    >
+                      Create Your First Quiz
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
 
-        {/* AI Learning Assistant */}
-        <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Brain className="w-5 h-5 text-purple-500 dark:text-purple-400" />
-              <CardTitle>AI Learning Assistant</CardTitle>
-            </div>
-            <p className="text-gray-500 dark:text-gray-400">Hello! I&apos;m here to help you learn and understand topics better.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                  <Zap className="w-3 h-3 text-white" />
+            {/* Quick Actions */}
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-yellow-600" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button
+                    onClick={() => router.push('/create-quiz')}
+                    className="h-20 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <div className="text-center">
+                      <Play className="w-6 h-6 mx-auto mb-2" />
+                      <span className="font-semibold">New Quiz</span>
+                    </div>
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/question-history')}
+                    className="h-20 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <div className="text-center">
+                      <History className="w-6 h-6 mx-auto mb-2" />
+                      <span className="font-semibold">View History</span>
+                    </div>
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/analytics')}
+                    className="h-20 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <div className="text-center">
+                      <BarChart3 className="w-6 h-6 mx-auto mb-2" />
+                      <span className="font-semibold">Analytics</span>
+                    </div>
+                  </Button>
+                  <Button
+                    onClick={() => router.push('/topics')}
+                    className="h-20 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <div className="text-center">
+                      <BookOpen className="w-6 h-6 mx-auto mb-2" />
+                      <span className="font-semibold">Topics</span>
+                    </div>
+                  </Button>
                 </div>
-                <span className="font-medium">AI Learning Assistant</span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                Hello! I&apos;m here to help you learn and understand topics better.
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Ask me anything about the quiz or related topics!
-              </p>
-            </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Chat History */}
-            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-              {chatHistory.map((chat, index) => (
-                <div key={index} className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-xs p-3 rounded-lg ${
-                    chat.type === 'user' 
-                      ? 'bg-blue-500 dark:bg-blue-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                  }`}>
-                    {chat.message}
+          {/* Right Column - AI Assistant & Stats */}
+          <div className="space-y-6">
+            {/* AI Learning Assistant */}
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold flex items-center">
+                  <Brain className="w-5 h-5 mr-2 text-purple-600" />
+                  AI Learning Assistant
+                </CardTitle>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Ask me anything about your studies!
+                </p>
+              </CardHeader>
+              <CardContent>
+                {/* Chat History */}
+                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                  {chatHistory.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Brain className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Start a conversation to get help with your learning!
+                      </p>
+                    </div>
+                  ) : (
+                    chatHistory.map((chat, index) => (
+                      <div key={index} className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-xs p-3 rounded-xl ${
+                          chat.type === 'user' 
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
+                            : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200'
+                        }`}>
+                          {chat.message}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Chat Input */}
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Ask about your studies..."
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={sendChatMessage}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Performance Insights */}
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
+                  Performance Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                  <div className="flex items-center">
+                    <Star className="w-5 h-5 text-yellow-500 mr-2" />
+                    <span className="font-medium">Study Streak</span>
                   </div>
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    7 days
+                  </Badge>
                 </div>
-              ))}
-            </div>
-
-            {/* Chat Input */}
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Ask about Mathematics..."
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
-                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <Button onClick={sendChatMessage} className="bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700">
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl">
+                  <div className="flex items-center">
+                    <Target className="w-5 h-5 text-blue-500 mr-2" />
+                    <span className="font-medium">Accuracy</span>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    {performance.averageScore}%
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                  <div className="flex items-center">
+                    <Award className="w-5 h-5 text-purple-500 mr-2" />
+                    <span className="font-medium">Best Score</span>
+                  </div>
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    {performance.bestScore}%
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

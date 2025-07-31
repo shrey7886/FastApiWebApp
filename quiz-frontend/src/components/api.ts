@@ -1,94 +1,111 @@
-// quiz-frontend/src/components/api.ts
-
-// Use Next.js API routes (works on Vercel)
+// API configuration
 const API_BASE = '/api';
 
-interface GenerateQuizParams {
+// Authentication
+export async function login(credentials: { email: string; password: string; tenant_id: string }) {
+  const res = await fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials)
+  });
+  if (!res.ok) throw new Error('Login failed');
+  return res.json();
+}
+
+export async function signup(userData: { email: string; password: string; first_name: string; last_name: string; tenant_id: string }) {
+  const res = await fetch(`${API_BASE}/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+  if (!res.ok) throw new Error('Signup failed');
+  return res.json();
+}
+
+// Quiz generation
+export async function generateQuiz(formData: {
   topic: string;
   difficulty: string;
   num_questions: number;
   duration: number;
   tenant_id: string;
   token?: string;
-}
-
-interface FetchQuizParams {
-  quiz_id: number;
-  tenant_id: string;
-  token?: string;
-}
-
-interface SubmitQuizParams {
-  quiz_id: number;
-  user_answers: Record<string, string>;
-  tenant_id: string;
-  token?: string;
-}
-
-interface FetchSimilarQuestionsParams {
-  quiz_id: number;
-  tenant_id: string;
-  token?: string;
-}
-
-export async function generateQuiz({ topic, difficulty, num_questions, duration, tenant_id, token }: GenerateQuizParams) {
-  console.log('🚀 Calling generateQuiz API with:', { topic, difficulty, num_questions, duration, tenant_id });
-  
-  const requestBody = { topic, difficulty, num_questions, duration, tenant_id };
-  console.log('📤 Request body being sent:', requestBody);
+}) {
+  console.log('🚀 Generating quiz with data:', formData);
   
   try {
     const res = await fetch(`${API_BASE}/generate-quiz`, {
       method: 'POST',
-      headers: {
+      headers: { 
         'Content-Type': 'application/json',
+        ...(formData.token && { Authorization: `Bearer ${formData.token}` })
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(formData)
     });
     
-    console.log('📡 API Response status:', res.status);
+    console.log('📡 Response status:', res.status);
     
     if (!res.ok) {
-      const errorData = await res.text();
-      console.error('❌ API Error:', res.status, errorData);
-      throw new Error(`Failed to generate quiz: ${res.status} - ${errorData}`);
+      const errorText = await res.text();
+      console.error('❌ API Error:', errorText);
+      throw new Error(`Failed to generate quiz: ${res.status}`);
     }
     
     const data = await res.json();
     console.log('✅ Quiz generated successfully:', data);
     return data;
   } catch (error) {
-    console.error('❌ Network error:', error);
-    throw new Error('Failed to connect to quiz generation service');
+    console.error('❌ Quiz generation error:', error);
+    throw error;
   }
 }
 
-export async function fetchQuiz({ quiz_id, tenant_id, token }: FetchQuizParams) {
-  const res = await fetch(`${API_BASE}/quizzes/${quiz_id}?tenant_id=${tenant_id}`, {
+// Quiz operations
+export async function fetchQuiz(quizId: string, tenant_id: string, token?: string) {
+  const res = await fetch(`${API_BASE}/quizzes/${quizId}?tenant_id=${tenant_id}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error('Failed to fetch quiz');
   return res.json();
 }
 
-export async function submitQuiz({ quiz_id, user_answers, tenant_id, token }: SubmitQuizParams) {
+export async function submitQuiz(submission: {
+  quiz_id: string;
+  answers: Record<string, string>;
+  time_taken: number;
+  tenant_id: string;
+  token?: string;
+}) {
   const res = await fetch(`${API_BASE}/submit-quiz`, {
     method: 'POST',
-    headers: {
+    headers: { 
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      ...(submission.token && { Authorization: `Bearer ${submission.token}` })
     },
-    body: JSON.stringify({ quiz_id, user_answers, tenant_id })
+    body: JSON.stringify(submission)
   });
   if (!res.ok) throw new Error('Failed to submit quiz');
   return res.json();
 }
 
-export async function fetchSimilarQuestions({ quiz_id, tenant_id, token }: FetchSimilarQuestionsParams) {
-  const res = await fetch(`${API_BASE}/quizzes/${quiz_id}/similar-questions?tenant_id=${tenant_id}`, {
+// Analytics and history
+export async function fetchAnalytics(tenant_id: string, token?: string) {
+  const res = await fetch(`${API_BASE}/analytics/user?tenant_id=${tenant_id}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
-  if (!res.ok) throw new Error('Failed to fetch similar questions');
+  if (!res.ok) throw new Error('Failed to fetch analytics');
+  return res.json();
+}
+
+export async function fetchQuizHistory(tenant_id: string, limit?: number, token?: string) {
+  const params = new URLSearchParams();
+  params.append('tenant_id', tenant_id);
+  if (limit) params.append('limit', limit.toString());
+  
+  const res = await fetch(`${API_BASE}/quiz-history?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!res.ok) throw new Error('Failed to fetch quiz history');
   return res.json();
 }
 
@@ -107,5 +124,12 @@ export async function fetchQuestionHistory({ tenant_id, topic, limit, token }: {
     headers: token ? { Authorization: `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error('Failed to fetch question history');
+  return res.json();
+}
+
+// Health check
+export async function healthCheck() {
+  const res = await fetch(`${API_BASE}/health`);
+  if (!res.ok) throw new Error('Health check failed');
   return res.json();
 } 
