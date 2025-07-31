@@ -90,4 +90,22 @@ export async function fetchSimilarQuestions({ quiz_id, tenant_id, token }: Fetch
   });
   if (!res.ok) throw new Error('Failed to fetch similar questions');
   return res.json();
+}
+
+export async function fetchQuestionHistory({ tenant_id, topic, limit, token }: {
+  tenant_id: string;
+  topic?: string;
+  limit?: number;
+  token?: string;
+}) {
+  const params = new URLSearchParams();
+  params.append('tenant_id', tenant_id);
+  if (topic) params.append('topic', topic);
+  if (limit) params.append('limit', limit.toString());
+  
+  const res = await fetch(`${API_BASE}/question-history?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  });
+  if (!res.ok) throw new Error('Failed to fetch question history');
+  return res.json();
 } 

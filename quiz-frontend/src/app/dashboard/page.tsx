@@ -200,9 +200,18 @@ export default function Dashboard() {
       <div className="p-4 space-y-6">
         {/* Performance Overview */}
         <div>
-          <div className="flex items-center space-x-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
-            <h2 className="text-xl font-semibold">Performance Overview</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="w-5 h-5 text-blue-400" />
+              <h2 className="text-xl font-semibold">Performance Overview</h2>
+            </div>
+            <Button
+              onClick={() => router.push('/question-history')}
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              View Question History
+            </Button>
           </div>
                   <div className="grid grid-cols-3 gap-4">
           <Card className="bg-blue-500 dark:bg-blue-600 border-blue-400 dark:border-blue-500">

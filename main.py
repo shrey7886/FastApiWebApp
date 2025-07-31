@@ -1144,6 +1144,75 @@ def get_quiz_history(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/question-history")
+def get_question_history(
+    tenant_id: str = Query(...),
+    topic: str = Query(None),  # Optional filter by topic
+    limit: int = Query(50),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get user's question history to show which questions they've already answered"""
+    # Ensure user belongs to the specified tenant
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(status_code=403, detail="Access denied: User does not belong to this tenant")
+    
+    try:
+        # Build query for user's answered questions
+        query = db.query(models.UserQuestionHistory).filter(
+            models.UserQuestionHistory.user_id == current_user.id,
+            models.UserQuestionHistory.tenant_id == tenant_id
+        )
+        
+        # Filter by topic if specified
+        if topic:
+            query = query.filter(models.UserQuestionHistory.topic_name == topic)
+        
+        # Get questions ordered by most recent first
+        answered_questions = query.order_by(
+            models.UserQuestionHistory.answered_at.desc()
+        ).limit(limit).all()
+        
+        # Format the response
+        question_history = []
+        for qh in answered_questions:
+            question_history.append({
+                "question_id": qh.question_id,
+                "question_text": qh.question_text,
+                "topic_name": qh.topic_name,
+                "difficulty_level": qh.difficulty_level,
+                "user_answer": qh.user_answer,
+                "correct_answer": qh.correct_answer,
+                "is_correct": qh.is_correct,
+                "time_taken_seconds": qh.time_taken_seconds,
+                "answered_at": qh.answered_at.isoformat(),
+                "quiz_id": qh.quiz_id
+            })
+        
+        # Get summary statistics
+        total_answered = len(answered_questions)
+        correct_answers = sum(1 for q in answered_questions if q.is_correct)
+        accuracy = (correct_answers / total_answered * 100) if total_answered > 0 else 0
+        
+        # Get unique topics
+        unique_topics = list(set(qh.topic_name for qh in answered_questions))
+        
+        return {
+            "success": True,
+            "question_history": question_history,
+            "summary": {
+                "total_questions_answered": total_answered,
+                "correct_answers": correct_answers,
+                "accuracy_percentage": round(accuracy, 2),
+                "unique_topics": unique_topics,
+                "topics_count": len(unique_topics)
+            },
+            "total_count": len(question_history)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001) 
