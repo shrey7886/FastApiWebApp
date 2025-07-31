@@ -5,26 +5,18 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 Quiz generation API called');
-    
-    let body;
-    try {
-      body = await request.json();
-    } catch (e) {
-      console.log('❌ Failed to parse JSON, using default values');
-      body = {};
-    }
-    
-    console.log('📋 Raw request body:', body);
-    
-    // Extract data with fallbacks to ensure it always works
-    const topic = body.topic || 'General Knowledge';
-    const difficulty = body.difficulty || 'medium';
-    const num_questions = parseInt(body.num_questions) || 5;
-    const duration = parseInt(body.duration) || 10;
-    const tenant_id = body.tenant_id || 'default';
+    const body = await request.json();
+    const { topic, difficulty, num_questions, duration, tenant_id, token } = body;
 
-    console.log('📋 Using data:', { topic, difficulty, num_questions, duration, tenant_id });
+    console.log('🎯 Quiz generation request received:', { topic, difficulty, num_questions, duration, tenant_id });
+
+    if (!topic || !difficulty || !num_questions) {
+      console.error('❌ Missing required fields');
+      return NextResponse.json(
+        { error: 'Missing required fields: topic, difficulty, num_questions' },
+        { status: 400 }
+      );
+    }
 
     console.log(`🎯 Generating quiz for topic: "${topic}"`);
 
@@ -44,7 +36,7 @@ export async function POST(request: NextRequest) {
       id: q.id || `q_${Date.now()}_${index}`,
       question_text: q.question_text,
       option_a: q.answers?.[0]?.answer_text || 'Option A',
-      option_b: q.answers?.[1]?.answer_text || 'Option B', 
+      option_b: q.answers?.[1]?.answer_text || 'Option B',
       option_c: q.answers?.[2]?.answer_text || 'Option C',
       option_d: q.answers?.[3]?.answer_text || 'Option D',
       correct_answer: q.correct_answer || q.answers?.find((a: any) => a.correct)?.answer_text || 'A',
@@ -61,7 +53,7 @@ export async function POST(request: NextRequest) {
       num_questions,
       duration,
       tenant_id,
-      questions: transformedQuestions,
+      questions: transformedQuestions, // Use transformed questions
       created_at: new Date().toISOString()
     };
 
@@ -69,7 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(quiz);
   } catch (error) {
     console.error('❌ Quiz generation error:', error);
-    
+
     // Return a guaranteed fallback quiz
     const fallbackQuiz = {
       id: Date.now().toString(),
@@ -120,10 +112,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Fallback question generator
+// Fallback question generator (moved here from quiz-generator.ts)
 function generateFallbackQuestions(topic: string, difficulty: string, num_questions: number) {
   console.log(`🔄 Generating ${num_questions} fallback questions for "${topic}"`);
-  
+
   const questions = [];
   const questionTemplates = [
     `What is the primary purpose of ${topic}?`,
@@ -137,7 +129,7 @@ function generateFallbackQuestions(topic: string, difficulty: string, num_questi
     `How would you best explain ${topic} to someone?`,
     `What makes ${topic} unique or special?`
   ];
-  
+
   for (let i = 0; i < num_questions; i++) {
     const template = questionTemplates[i % questionTemplates.length];
     questions.push({
@@ -169,6 +161,6 @@ function generateFallbackQuestions(topic: string, difficulty: string, num_questi
       explanation: `This represents the fundamental understanding and primary purpose of ${topic}, which is essential for mastering this subject.`
     });
   }
-  
+
   return questions;
 } 

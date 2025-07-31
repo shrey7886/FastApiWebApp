@@ -68,7 +68,9 @@ export default function Dashboard() {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [questions, setQuestions] = useState<QuestionReview[]>([]);
   const [chatMessage, setChatMessage] = useState('');
-  const [chatHistory, setChatHistory] = useState<Array<{type: 'user' | 'ai', message: string}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{role: 'user' | 'assistant', content: string, timestamp: Date}>>([
+    { role: 'assistant', content: 'Hello! I\'m your AI learning assistant. How can I help you improve your quiz performance today?', timestamp: new Date() }
+  ]);
   const [isLoading, setIsLoading] = useState(true);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,35 +128,48 @@ export default function Dashboard() {
     }
   };
 
-  const sendChatMessage = async () => {
-    if (!chatMessage.trim() || isChatLoading) return;
+  const sendChatMessage = async (message: string) => {
+    if (!message.trim() || isChatLoading) return;
     
-    const userMessage = chatMessage.trim();
-    setChatMessage('');
     setIsChatLoading(true);
-    
-    // Add user message to chat
-    setChatHistory(prev => [...prev, { type: 'user', message: userMessage }]);
-    
+    const userMessage: { role: 'user' | 'assistant'; content: string; timestamp: Date } = { 
+      role: 'user', 
+      content: message, 
+      timestamp: new Date() 
+    };
+    setChatHistory(prev => [...prev, userMessage]);
+    setChatMessage('');
+
     try {
-      // Simulate AI response (in real app, this would call an AI service)
-      const aiResponses = [
-        "Great question! Based on your learning patterns, I'd recommend focusing on practice questions in that area.",
-        "I can see you're making excellent progress! Your recent quiz scores show improvement.",
-        "That's an interesting topic! Would you like me to generate a quiz specifically about that subject?",
-        "Based on your performance data, you might want to review the fundamentals before moving to advanced topics.",
-        "Excellent work! Your study streak is impressive. Keep up the momentum!"
+      // Simulate AI response with LLM-like behavior
+      const responses = [
+        `Great question! Based on your learning patterns, I'd recommend focusing on ${message.toLowerCase().includes('math') ? 'practical problem-solving' : message.toLowerCase().includes('history') ? 'timeline connections' : 'key concepts'} to improve your understanding.`,
+        `I've analyzed your quiz performance and noticed you excel in ${message.toLowerCase().includes('easy') ? 'basic concepts' : message.toLowerCase().includes('hard') ? 'complex topics' : 'moderate difficulty'}. Try challenging yourself with more advanced questions!`,
+        `Based on your recent quiz results, here's my AI-powered advice: ${message.toLowerCase().includes('improve') ? 'Practice regularly with varied topics, review explanations thoroughly, and don\'t hesitate to retake quizzes on challenging subjects.' : 'You\'re making excellent progress! Keep exploring new topics and maintain your current study habits.'}`,
+        `As your AI learning assistant, I recommend: ${message.toLowerCase().includes('topic') ? 'Explore related subjects to build a comprehensive understanding. Try creating quizzes on connected themes.' : 'Focus on areas where you scored lower and use the detailed explanations to strengthen your knowledge gaps.'}`,
+        `Here's my personalized learning strategy for you: ${message.toLowerCase().includes('help') ? 'Break down complex topics into smaller concepts, use the quiz explanations as study guides, and practice with different difficulty levels.' : 'You\'re on the right track! Consider exploring topics outside your comfort zone to expand your knowledge base.'}`
       ];
       
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
       
-      // Simulate delay for realistic feel
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate AI processing time
+      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
       
-      setChatHistory(prev => [...prev, { type: 'ai', message: randomResponse }]);
-    } catch (err) {
-      console.error('Chat error:', err);
-      setChatHistory(prev => [...prev, { type: 'ai', message: 'Sorry, I encountered an error. Please try again.' }]);
+      const aiMessage: { role: 'user' | 'assistant'; content: string; timestamp: Date } = { 
+        role: 'assistant', 
+        content: randomResponse, 
+        timestamp: new Date() 
+      };
+      
+      setChatHistory(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage: { role: 'user' | 'assistant'; content: string; timestamp: Date } = { 
+        role: 'assistant', 
+        content: 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.', 
+        timestamp: new Date() 
+      };
+      setChatHistory(prev => [...prev, errorMessage]);
     } finally {
       setIsChatLoading(false);
     }
@@ -417,33 +432,28 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {/* Chat History */}
-                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                  {chatHistory.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Brain className="w-6 h-6 text-purple-600" />
+                <div className="space-y-4 max-h-64 overflow-y-auto scrollbar-thin">
+                  {chatHistory.map((message, index) => (
+                    <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
+                        message.role === 'user' 
+                          ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      }`}>
+                        <p className="text-sm">{message.content}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Start a conversation to get help with your learning!
-                      </p>
                     </div>
-                  ) : (
-                    chatHistory.map((chat, index) => (
-                      <div key={index} className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-xs p-3 rounded-xl ${
-                          chat.type === 'user' 
-                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
-                            : 'bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200'
-                        }`}>
-                          {chat.message}
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  ))}
                   {isChatLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 p-3 rounded-xl">
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                      <div className="bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-2xl">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -455,12 +465,12 @@ export default function Dashboard() {
                     placeholder="Ask about your studies..."
                     value={chatMessage}
                     onChange={(e) => setChatMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
+                    onKeyPress={(e) => e.key === 'Enter' && sendChatMessage(chatMessage)}
                     className="flex-1"
                     disabled={isChatLoading}
                   />
                   <Button 
-                    onClick={sendChatMessage}
+                    onClick={() => sendChatMessage(chatMessage)}
                     disabled={isChatLoading || !chatMessage.trim()}
                     className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:opacity-50"
                   >
