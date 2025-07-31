@@ -1,7 +1,9 @@
 'use client'
 
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useState } from 'react'
-import { submitQuiz, fetchSimilarQuestions } from './api'
+import { submitQuiz } from './api'
 
 interface Question {
   id: number
@@ -30,7 +32,6 @@ export default function QuizDisplay({ quiz, tenant_id, token }: QuizDisplayProps
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [similarQuestions, setSimilarQuestions] = useState<any[]>([])
-  const [loadingSimilar, setLoadingSimilar] = useState(false)
 
   const handleOptionSelect = (questionId: number, option: string) => {
     setUserAnswers(prev => ({ ...prev, [questionId]: option }))
@@ -45,33 +46,17 @@ export default function QuizDisplay({ quiz, tenant_id, token }: QuizDisplayProps
         formattedAnswers[qid] = ans
       })
       const res = await submitQuiz({
-        quiz_id: quiz.id,
-        user_answers: formattedAnswers,
+        quiz_id: quiz.id.toString(),
+        answers: formattedAnswers,
+        time_taken: 0,
         tenant_id,
         token
       })
-      setResult(res)
+      setResult(res.result)
     } catch (err: any) {
       setError(err.message || 'Failed to submit quiz')
     } finally {
       setSubmitting(false)
-    }
-  }
-
-  const handleFetchSimilar = async () => {
-    setLoadingSimilar(true)
-    setError(null)
-    try {
-      const res = await fetchSimilarQuestions({
-        quiz_id: quiz.id,
-        tenant_id,
-        token
-      })
-      setSimilarQuestions(res.similar_questions)
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch similar questions')
-    } finally {
-      setLoadingSimilar(false)
     }
   }
 
@@ -173,22 +158,14 @@ export default function QuizDisplay({ quiz, tenant_id, token }: QuizDisplayProps
             <h3 className="text-xl font-bold gradient-text">Similar Questions</h3>
             <button
               className="btn-secondary"
-              onClick={handleFetchSimilar}
-              disabled={loadingSimilar}
+              onClick={() => window.location.reload()}
             >
-              {loadingSimilar ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500 mr-2"></div>
-                  Loading...
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh
-                </div>
-              )}
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </div>
             </button>
           </div>
           
