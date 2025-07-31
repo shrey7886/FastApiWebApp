@@ -33,6 +33,18 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ Generated ${questions.length} questions successfully`);
 
+    // Transform questions to the correct format for QuizTaker
+    const transformedQuestions = questions.map((q: any, index: number) => ({
+      id: q.id || `q_${Date.now()}_${index}`,
+      question_text: q.question_text,
+      option_a: q.answers?.[0]?.answer_text || 'Option A',
+      option_b: q.answers?.[1]?.answer_text || 'Option B', 
+      option_c: q.answers?.[2]?.answer_text || 'Option C',
+      option_d: q.answers?.[3]?.answer_text || 'Option D',
+      correct_answer: q.correct_answer || q.answers?.find((a: any) => a.correct)?.answer_text || 'A',
+      explanation: q.explanation || 'No explanation provided.'
+    }));
+
     // Create quiz object
     const quiz = {
       id: Date.now().toString(),
@@ -43,7 +55,7 @@ export async function POST(request: NextRequest) {
       num_questions,
       duration,
       tenant_id,
-      questions,
+      questions: transformedQuestions,
       created_at: new Date().toISOString()
     };
 
@@ -66,36 +78,30 @@ export async function POST(request: NextRequest) {
         {
           id: 'q_1',
           question_text: 'What is the capital of France?',
-          answers: [
-            { id: 'a_1', answer_text: 'Paris', correct: true },
-            { id: 'a_2', answer_text: 'London', correct: false },
-            { id: 'a_3', answer_text: 'Berlin', correct: false },
-            { id: 'a_4', answer_text: 'Madrid', correct: false }
-          ],
+          option_a: 'Paris',
+          option_b: 'London',
+          option_c: 'Berlin',
+          option_d: 'Madrid',
           correct_answer: 'Paris',
           explanation: 'Paris is the capital and largest city of France.'
         },
         {
           id: 'q_2',
           question_text: 'Which planet is closest to the Sun?',
-          answers: [
-            { id: 'a_5', answer_text: 'Venus', correct: false },
-            { id: 'a_6', answer_text: 'Mercury', correct: true },
-            { id: 'a_7', answer_text: 'Earth', correct: false },
-            { id: 'a_8', answer_text: 'Mars', correct: false }
-          ],
+          option_a: 'Venus',
+          option_b: 'Mercury',
+          option_c: 'Earth',
+          option_d: 'Mars',
           correct_answer: 'Mercury',
           explanation: 'Mercury is the first planet from the Sun in our solar system.'
         },
         {
           id: 'q_3',
           question_text: 'What is 2 + 2?',
-          answers: [
-            { id: 'a_9', answer_text: '3', correct: false },
-            { id: 'a_10', answer_text: '4', correct: true },
-            { id: 'a_11', answer_text: '5', correct: false },
-            { id: 'a_12', answer_text: '6', correct: false }
-          ],
+          option_a: '3',
+          option_b: '4',
+          option_c: '5',
+          option_d: '6',
           correct_answer: '4',
           explanation: '2 + 2 equals 4.'
         }
