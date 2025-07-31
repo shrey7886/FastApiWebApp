@@ -14,7 +14,16 @@ import {
   ArrowLeft, 
   ArrowRight,
   Timer,
-  AlertTriangle
+  AlertTriangle,
+  Brain,
+  Target,
+  Loader2,
+  Play,
+  Pause,
+  RotateCcw,
+  BarChart3,
+  BookOpen,
+  Zap
 } from 'lucide-react';
 
 interface Question {
@@ -51,6 +60,8 @@ export default function QuizTaker() {
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [showQuestionNav, setShowQuestionNav] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
@@ -67,7 +78,7 @@ export default function QuizTaker() {
   }, [quizId]);
 
   useEffect(() => {
-    if (quiz && timeLeft > 0) {
+    if (quiz && timeLeft > 0 && !isPaused) {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -84,11 +95,12 @@ export default function QuizTaker() {
         clearInterval(timerRef.current);
       }
     };
-  }, [quiz, timeLeft]);
+  }, [quiz, timeLeft, isPaused]);
 
   const loadQuiz = async () => {
     try {
       setLoading(true);
+      setError(null);
       const quizData = await fetchQuiz(quizId, user?.tenant_id || 'default', token || undefined);
       setQuiz(quizData);
       setTimeLeft(quizData.duration * 60); // Convert minutes to seconds
@@ -96,7 +108,7 @@ export default function QuizTaker() {
       setLoading(false);
     } catch (error) {
       console.error('Error loading quiz:', error);
-      setError('Failed to load quiz');
+      setError('Failed to load quiz. Please try again.');
       setLoading(false);
     }
   };
@@ -109,7 +121,7 @@ export default function QuizTaker() {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestionIndex < (quiz?.questions.length || 0) - 1) {
+    if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -125,298 +137,350 @@ export default function QuizTaker() {
   };
 
   const handleSubmitQuiz = async () => {
+    if (!quiz) return;
+    
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      
-      const submission = await submitQuiz({
-        quiz_id: quizId,
+      const timeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const result = await submitQuiz({
+        quiz_id: quiz.id,
         answers: userAnswers,
-        time_taken: Math.floor((Date.now() - startTimeRef.current) / 1000),
+        time_taken: timeTaken,
         tenant_id: user?.tenant_id || 'default',
         token: token || undefined
       });
-
-      console.log('Quiz submitted successfully:', submission);
       
-      // Navigate to results page
-      if (submission.result?.id) {
-        router.push(`/results/${submission.result.id}`);
-      } else {
-        throw new Error('No result ID returned');
-      }
+      router.push(`/results/${result.result.id}`);
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      setError('Failed to submit quiz');
+      setError('Failed to submit quiz. Please try again.');
       setIsSubmitting(false);
     }
   };
 
   const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const getProgressPercentage = () => {
-    return (Object.keys(userAnswers).length / (quiz?.questions.length || 0)) * 100;
+    if (!quiz) return 0;
+    return ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
   };
 
   const getTimeColor = () => {
-    if (timeLeft < 60) return 'text-red-600';
-    if (timeLeft < 300) return 'text-yellow-600';
-    return 'text-green-600';
+    if (timeLeft <= 60) return 'text-red-500';
+    if (timeLeft <= 300) return 'text-yellow-500';
+    return 'text-green-500';
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty.toLowerCase()) {
+      case 'easy': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'hard': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const togglePause = () => {
+    setIsPaused(!isPaused);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Brain className="w-8 h-8 text-white" />
+          </div>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Loading Quiz...</h2>
+          <p className="text-gray-600 dark:text-gray-400">Preparing your learning experience</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Alert className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (!quiz || (quiz?.questions.length || 0) === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Alert className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Quiz not found or no questions available.</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const isAnswered = userAnswers[currentQuestion.id];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{quiz.title}</h1>
-              <p className="text-gray-600 dark:text-gray-400">{quiz.description}</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dashboard')}
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Dashboard</span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Oops! Something went wrong</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
+          <div className="space-x-4">
+            <Button onClick={loadQuiz} className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
             </Button>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* Progress and Timer */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Progress</span>
-                <span className="text-sm text-muted-foreground">
-                  {Object.keys(userAnswers).length}/{quiz?.questions.length || 0}
-                </span>
-              </div>
-              <Progress value={getProgressPercentage()} className="mt-2" />
-            </CardContent>
-          </Card>
+  if (!quiz) {
+    return null;
+  }
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Time Remaining</span>
-                <div className={`flex items-center space-x-1 ${getTimeColor()}`}>
-                  <Timer className="h-4 w-4" />
-                  <span className="font-mono font-bold">{formatTime(timeLeft)}</span>
-                </div>
-              </div>
-              <Progress 
-                value={(timeLeft / (quiz.duration * 60)) * 100} 
-                className="mt-2"
-              />
-            </CardContent>
-          </Card>
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const answeredQuestions = Object.keys(userAnswers).length;
+  const totalQuestions = quiz.questions.length;
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Difficulty</span>
-                <Badge variant="outline" className="capitalize">
-                  {quiz.difficulty}
-                </Badge>
-              </div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Question */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Question {currentQuestionIndex + 1}</span>
-              {isAnswered && <CheckCircle className="h-5 w-5 text-green-600" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <p className="text-lg font-medium">{currentQuestion.question_text}</p>
-              
-              <div className="space-y-3">
-                {Object.entries({
-                  A: currentQuestion.option_a,
-                  B: currentQuestion.option_b,
-                  C: currentQuestion.option_c,
-                  D: currentQuestion.option_d,
-                }).map(([option, text]) => (
-                  <button
-                    key={option}
-                    onClick={() => handleAnswerSelect(currentQuestion.id, option)}
-                    className={`w-full p-4 text-left border rounded-lg transition-all ${
-                      userAnswers[currentQuestion.id] === option
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                        userAnswers[currentQuestion.id] === option
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}>
-                        {userAnswers[currentQuestion.id] === option && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      <span className="font-medium">{option}.</span>
-                      <span>{text}</span>
-                    </div>
-                  </button>
-                ))}
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Header */}
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard')}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">{quiz.title}</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{quiz.description}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePreviousQuestion}
-            disabled={currentQuestionIndex === 0}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Previous</span>
-          </Button>
-
-          <div className="flex items-center space-x-2">
-            {currentQuestionIndex === (quiz?.questions.length || 0) - 1 ? (
+            <div className="flex items-center space-x-4">
+              <Badge className={getDifficultyColor(quiz.difficulty)}>
+                {quiz.difficulty}
+              </Badge>
               <Button
-                onClick={() => setShowConfirmSubmit(true)}
-                disabled={isSubmitting}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                variant="ghost"
+                onClick={togglePause}
+                className="hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Submit Quiz</span>
-                  </>
-                )}
+                {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               </Button>
-            ) : (
-              <Button
-                onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === (quiz?.questions.length || 0) - 1}
-                className="flex items-center space-x-2"
-              >
-                <span>Next</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            )}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Question Navigation */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Question Navigation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {quiz.questions.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentQuestionIndex(index)}
-                  className={`p-2 text-sm border rounded ${
-                    index === currentQuestionIndex
-                      ? 'border-blue-500 bg-blue-500 text-white'
-                      : userAnswers[quiz.questions[index].id]
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {index + 1}
-                </button>
-              ))}
+      {/* Progress Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Question {currentQuestionIndex + 1} of {totalQuestions}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {answeredQuestions} answered
+              </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Clock className={`w-4 h-4 ${getTimeColor()}`} />
+                <span className={`font-mono text-lg font-bold ${getTimeColor()}`}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+            </div>
+          </div>
+          <Progress value={getProgressPercentage()} className="h-2" />
+        </div>
+      </div>
 
-        {/* Confirm Submit Modal */}
-        {showConfirmSubmit && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="max-w-md mx-4">
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Question Navigation */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl sticky top-32">
               <CardHeader>
-                <CardTitle>Confirm Submission</CardTitle>
+                <CardTitle className="text-lg font-semibold flex items-center">
+                  <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
+                  Progress
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="mb-4">
-                  Are you sure you want to submit your quiz? You cannot change your answers after submission.
-                </p>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowConfirmSubmit(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowConfirmSubmit(false);
-                      handleSubmitQuiz();
-                    }}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Submit Quiz
-                  </Button>
+                <div className="grid grid-cols-5 gap-2 mb-6">
+                  {quiz.questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentQuestionIndex(index)}
+                      className={`w-8 h-8 rounded-lg text-xs font-medium transition-all duration-200 ${
+                        index === currentQuestionIndex
+                          ? 'bg-blue-500 text-white shadow-lg'
+                          : userAnswers[quiz.questions[index].id]
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Answered</span>
+                    <span className="font-semibold text-green-600">{answeredQuestions}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Remaining</span>
+                    <span className="font-semibold text-blue-600">{totalQuestions - answeredQuestions}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                    <span className="font-semibold text-purple-600">{Math.round((answeredQuestions / totalQuestions) * 100)}%</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-        )}
+
+          {/* Question Content */}
+          <div className="lg:col-span-3">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+              <CardContent className="p-8">
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Question {currentQuestionIndex + 1}
+                    </Badge>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100)}% complete
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 leading-relaxed">
+                    {currentQuestion.question_text}
+                  </h2>
+                </div>
+
+                <div className="space-y-4 mb-8">
+                  {[
+                    { key: 'A', value: currentQuestion.option_a },
+                    { key: 'B', value: currentQuestion.option_b },
+                    { key: 'C', value: currentQuestion.option_c },
+                    { key: 'D', value: currentQuestion.option_d }
+                  ].map((option) => (
+                    <button
+                      key={option.key}
+                      onClick={() => handleAnswerSelect(currentQuestion.id, option.value)}
+                      className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
+                        userAnswers[currentQuestion.id] === option.value
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          userAnswers[currentQuestion.id] === option.value
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}>
+                          {option.key}
+                        </div>
+                        <span className="font-medium">{option.value}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Navigation Buttons */}
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    onClick={handlePreviousQuestion}
+                    disabled={currentQuestionIndex === 0}
+                    className="px-6 py-3"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center space-x-4">
+                    {currentQuestionIndex === totalQuestions - 1 ? (
+                      <Button
+                        onClick={() => setShowConfirmSubmit(true)}
+                        disabled={answeredQuestions === 0}
+                        className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8 py-3"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Submit Quiz
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleNextQuestion}
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6 py-3"
+                      >
+                        Next
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmSubmit && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="bg-white dark:bg-gray-800 border-0 shadow-2xl max-w-md w-full">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  {timeLeft === 0 ? 'Time\'s Up!' : 'Submit Quiz?'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  {timeLeft === 0 
+                    ? 'Your time has run out. Your quiz will be submitted automatically.'
+                    : `You've answered ${answeredQuestions} out of ${totalQuestions} questions. Are you sure you want to submit?`
+                  }
+                </p>
+                <div className="flex space-x-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowConfirmSubmit(false)}
+                    disabled={timeLeft === 0}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmitQuiz}
+                    disabled={isSubmitting}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 flex-1"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Submit
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
-}; 
+} 
