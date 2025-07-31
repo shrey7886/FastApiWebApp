@@ -79,28 +79,28 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Check if user is logged in
-    if (!user || !token) {
-      setError('Please log in to generate quizzes')
-      return
-    }
-    
     // Validate topic input
     if (!formData.topic.trim()) {
       setError('Please enter a topic for your quiz')
       return
     }
     
+    // Ensure tenant_id is set
+    const finalTenantId = formData.tenant_id || user?.tenant_id || 'default';
+    
+    console.log('🔍 Form validation - Topic:', formData.topic);
+    console.log('🔍 Form validation - Tenant ID:', finalTenantId);
+    
     setLoading(true)
     setError(null)
     try {
       const quiz = await generateQuiz({
-        topic: formData.topic,
+        topic: formData.topic.trim(),
         difficulty: formData.difficulty,
         num_questions: formData.num_questions,
         duration: formData.duration,
-        tenant_id: formData.tenant_id,
-        token
+        tenant_id: finalTenantId,
+        token: token || undefined
       })
       onQuizGenerated(quiz)
     } catch (err: any) {
@@ -153,248 +153,285 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* User Info Display */}
-      {user && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Organization:</strong> {user.tenant_id}
-              </p>
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                <strong>User:</strong> {user.first_name || user.email}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                Ready to generate questions using AI models
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enhanced Topic Input */}
-      <div className="space-y-3">
-        <label htmlFor="topic" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Quiz Topic <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            id="topic"
-            name="topic"
-            value={formData.topic}
-            onChange={handleInputChange}
-            onFocus={() => setShowTopicSuggestions(true)}
-            className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
-            placeholder="Enter any topic (e.g., 'Dogs', 'Space Travel', 'Cooking', 'Video Games')"
-            required
-          />
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="max-w-4xl mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Header Section */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowTopicSuggestions(!showTopicSuggestions)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-200"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+          <div>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              Create Your Quiz
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Enter any topic and let AI generate engaging questions for you
+            </p>
+          </div>
         </div>
 
-        {/* Topic Suggestions Dropdown */}
-        {showTopicSuggestions && (
-          <div ref={dropdownRef} className="absolute z-50 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg max-h-96 overflow-y-auto">
-            <div className="p-4">
-              {/* Search within suggestions */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search topics..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                />
+        {/* User Info Display */}
+        {user && (
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/50 dark:border-blue-800/50 rounded-3xl p-6 backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-semibold text-lg">
+                    {user.first_name?.[0] || user.email[0].toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {user.first_name || user.email}
+                  </p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    {user.tenant_id}
+                  </p>
+                </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(filteredTopics).map(([category, topics]) => (
-                  <div key={category} className="space-y-2">
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 pb-1">
-                      {category}
-                    </h3>
-                    <div className="space-y-1">
-                      {topics.map((topic) => (
-                        <button
-                          key={topic}
-                          type="button"
-                          onClick={() => handleTopicSelect(topic)}
-                          className="block w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 rounded-lg transition-all duration-200"
-                        >
-                          {topic}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Custom topic message */}
-              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  💡 <strong>Tip:</strong> You can enter any topic! The AI will generate relevant questions for whatever you choose.
-                </p>
+              <div className="text-right">
+                <div className="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                  AI Ready
+                </div>
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Difficulty */}
-      <div className="space-y-3">
-        <label htmlFor="difficulty" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Difficulty Level
-        </label>
-        <div className="grid grid-cols-3 gap-3">
-          {['easy', 'medium', 'hard'].map((level) => (
-            <button
-              key={level}
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, difficulty: level }))}
-              className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
-                formData.difficulty === level
-                  ? `border-transparent bg-gradient-to-r ${difficultyColors[level as keyof typeof difficultyColors]} text-white shadow-lg`
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-600'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-lg mb-1">
-                  {level === 'easy' && '😊'}
-                  {level === 'medium' && '😐'}
-                  {level === 'hard' && '😰'}
-                </div>
-                <div className="text-sm font-medium capitalize">{level}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Number of Questions */}
-      <div className="space-y-3">
-        <label htmlFor="num_questions" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Number of Questions: <span className="text-blue-500 dark:text-blue-400 font-bold">{formData.num_questions}</span>
-        </label>
-        <div className="relative">
-          <input
-            type="range"
-            id="num_questions"
-            name="num_questions"
-            min="1"
-            max="15"
-            value={formData.num_questions}
-            onChange={handleInputChange}
-            className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-            <span>1</span>
-            <span>5</span>
-            <span>10</span>
-            <span>15</span>
+        {/* Topic Input Section */}
+        <div className="space-y-4">
+          <div className="text-center">
+            <label htmlFor="topic" className="block text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+              What would you like to learn about?
+            </label>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Enter any topic that interests you
+            </p>
           </div>
-        </div>
-      </div>
-
-      {/* Duration */}
-      <div className="space-y-3">
-        <label htmlFor="duration" className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Time Limit: <span className="text-blue-500 dark:text-blue-400 font-bold">{formData.duration} minutes</span>
-        </label>
-        <div className="relative">
-          <input
-            type="range"
-            id="duration"
-            name="duration"
-            min="5"
-            max="60"
-            step="5"
-            value={formData.duration}
-            onChange={handleInputChange}
-            className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-            <span>5m</span>
-            <span>15m</span>
-            <span>30m</span>
-            <span>60m</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Error message */}
-      {error && (
-        <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 animate-fade-in-up">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center mr-3">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          
+          <div className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              id="topic"
+              name="topic"
+              value={formData.topic}
+              onChange={handleInputChange}
+              onFocus={() => setShowTopicSuggestions(true)}
+              className="w-full px-6 py-4 pl-16 border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-4 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all duration-300 text-lg"
+              placeholder="e.g., Space Travel, Cooking, JavaScript, Your Hobby..."
+              required
+            />
+            <div className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <p className="text-red-800 dark:text-red-200 font-medium">{error}</p>
+            <button
+              type="button"
+              onClick={() => setShowTopicSuggestions(!showTopicSuggestions)}
+              className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors duration-200"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Topic Suggestions Dropdown */}
+          {showTopicSuggestions && (
+            <div ref={dropdownRef} className="absolute z-50 w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl max-h-96 overflow-y-auto">
+              <div className="p-6">
+                {/* Search within suggestions */}
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder="Search topics..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-4 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all duration-300"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Object.entries(filteredTopics).map(([category, topics]) => (
+                    <div key={category} className="space-y-3">
+                      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600 pb-2">
+                        {category}
+                      </h3>
+                      <div className="space-y-2">
+                        {topics.map((topic) => (
+                          <button
+                            key={topic}
+                            type="button"
+                            onClick={() => handleTopicSelect(topic)}
+                            className="block w-full text-left px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-700 dark:hover:text-blue-300 rounded-xl transition-all duration-200 hover:shadow-md"
+                          >
+                            {topic}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Custom topic message */}
+                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    💡 <strong>Pro Tip:</strong> You can enter any topic! The AI will generate relevant questions for whatever you choose.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Quiz Settings Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Difficulty */}
+          <div className="space-y-4">
+            <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Difficulty Level
+            </label>
+            <div className="space-y-3">
+              {['easy', 'medium', 'hard'].map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, difficulty: level }))}
+                  className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 ${
+                    formData.difficulty === level
+                      ? `border-transparent bg-gradient-to-r ${difficultyColors[level as keyof typeof difficultyColors]} text-white shadow-lg`
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">
+                      {level === 'easy' && '😊'}
+                      {level === 'medium' && '😐'}
+                      {level === 'hard' && '😰'}
+                    </div>
+                    <div className="text-sm font-semibold capitalize">{level}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Number of Questions */}
+          <div className="space-y-4">
+            <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Questions: <span className="text-blue-500 dark:text-blue-400 font-bold text-2xl">{formData.num_questions}</span>
+            </label>
+            <div className="relative pt-8">
+              <input
+                type="range"
+                id="num_questions"
+                name="num_questions"
+                min="1"
+                max="15"
+                value={formData.num_questions}
+                onChange={handleInputChange}
+                className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-4">
+                <span>1</span>
+                <span>5</span>
+                <span>10</span>
+                <span>15</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Duration */}
+          <div className="space-y-4">
+            <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Time Limit: <span className="text-blue-500 dark:text-blue-400 font-bold text-2xl">{formData.duration}m</span>
+            </label>
+            <div className="relative pt-8">
+              <input
+                type="range"
+                id="duration"
+                name="duration"
+                min="5"
+                max="60"
+                step="5"
+                value={formData.duration}
+                onChange={handleInputChange}
+                className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-4">
+                <span>5m</span>
+                <span>15m</span>
+                <span>30m</span>
+                <span>60m</span>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Submit button */}
-      <button 
-        type="submit" 
-        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none" 
-        disabled={loading || !formData.topic.trim() || !user}
-      >
-        {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-            Generating Quiz with AI...
-          </div>
-        ) : (
-          <div className="flex items-center justify-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Generate Quiz with AI
+        {/* Error message */}
+        {error && (
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 animate-fade-in-up">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-800 dark:text-red-200 font-medium text-lg">{error}</p>
+            </div>
           </div>
         )}
-      </button>
 
-      {/* Dynamic Topic Ideas */}
-      <div className="space-y-3">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">💡 Enter Any Topic:</p>
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
-          <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-            <strong>Examples:</strong> Try any topic you're interested in!
-          </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        {/* Submit button */}
+        <button 
+          type="submit" 
+          className="w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 hover:from-blue-600 hover:via-indigo-600 hover:to-purple-700 text-white font-bold py-6 px-8 rounded-2xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-lg" 
+          disabled={loading || !formData.topic.trim()}
+        >
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
+              <span className="text-xl">Generating Quiz with AI...</span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center">
+              <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="text-xl">Generate Quiz with AI</span>
+            </div>
+          )}
+        </button>
+
+        {/* Topic Ideas */}
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 border border-gray-200 dark:border-gray-700 rounded-3xl p-8">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">💡 Popular Topics</h3>
+            <p className="text-gray-600 dark:text-gray-400">Try any of these or enter your own!</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {['Your Hobby', 'Favorite Movie', 'Dream Job', 'Pet Name', 'Home Town', 'Favorite Food', 'School Subject', 'Travel Destination', 'Sports Team', 'Music Genre', 'Book Title', 'Scientific Concept'].map((suggestion) => (
               <div
                 key={suggestion}
-                className="px-2 py-1 text-xs bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 rounded-lg text-center"
+                className="px-4 py-3 text-sm bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 rounded-xl text-center border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-200 cursor-pointer"
+                onClick={() => setFormData(prev => ({ ...prev, topic: suggestion }))}
               >
                 {suggestion}
               </div>
             ))}
           </div>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mt-3">
-            💡 The AI will generate questions about whatever topic you choose!
-          </p>
+          <div className="text-center mt-6">
+            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+              ✨ The AI will generate questions about whatever topic you choose!
+            </p>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   )
 } 

@@ -32,16 +32,35 @@ interface FetchSimilarQuestionsParams {
 }
 
 export async function generateQuiz({ topic, difficulty, num_questions, duration, tenant_id, token }: GenerateQuizParams) {
-  const res = await fetch(`${API_BASE}/generate-quiz`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    },
-    body: JSON.stringify({ topic, difficulty, num_questions, duration, tenant_id })
-  });
-  if (!res.ok) throw new Error('Failed to generate quiz');
-  return res.json();
+  console.log('🚀 Calling generateQuiz API with:', { topic, difficulty, num_questions, duration, tenant_id });
+  
+  const requestBody = { topic, difficulty, num_questions, duration, tenant_id };
+  console.log('📤 Request body being sent:', requestBody);
+  
+  try {
+    const res = await fetch(`${API_BASE}/generate-quiz`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    console.log('📡 API Response status:', res.status);
+    
+    if (!res.ok) {
+      const errorData = await res.text();
+      console.error('❌ API Error:', res.status, errorData);
+      throw new Error(`Failed to generate quiz: ${res.status} - ${errorData}`);
+    }
+    
+    const data = await res.json();
+    console.log('✅ Quiz generated successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Network error:', error);
+    throw new Error('Failed to connect to quiz generation service');
+  }
 }
 
 export async function fetchQuiz({ quiz_id, tenant_id, token }: FetchQuizParams) {
