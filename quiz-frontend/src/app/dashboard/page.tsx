@@ -24,7 +24,7 @@ import {
   CheckCircle,
   ArrowRight
 } from 'lucide-react'
-import ThemeToggle from '@/components/ThemeToggle'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export const dynamic = 'force-dynamic';
 
