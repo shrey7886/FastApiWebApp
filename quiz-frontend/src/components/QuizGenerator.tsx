@@ -322,11 +322,16 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
           </div>
 
           {/* Number of Questions */}
-          <div className="space-y-4">
-            <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Questions: <span className="text-blue-500 dark:text-blue-400 font-bold text-2xl">{formData.num_questions}</span>
-            </label>
-            <div className="relative pt-8">
+          <div className="space-y-4 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-800/50">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Number of Questions
+              </label>
+              <div className="text-3xl font-bold text-blue-500 dark:text-blue-400">
+                {formData.num_questions}
+              </div>
+            </div>
+            <div className="relative">
               <input
                 type="range"
                 id="num_questions"
@@ -335,9 +340,9 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
                 max="15"
                 value={formData.num_questions}
                 onChange={handleInputChange}
-                className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full slider"
               />
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-4">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-4 font-medium">
                 <span>1</span>
                 <span>5</span>
                 <span>10</span>
@@ -347,11 +352,16 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
           </div>
 
           {/* Duration */}
-          <div className="space-y-4">
-            <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Time Limit: <span className="text-blue-500 dark:text-blue-400 font-bold text-2xl">{formData.duration}m</span>
-            </label>
-            <div className="relative pt-8">
+          <div className="space-y-4 p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-800/50">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Time Limit
+              </label>
+              <div className="text-3xl font-bold text-green-500 dark:text-green-400">
+                {formData.duration}m
+              </div>
+            </div>
+            <div className="relative">
               <input
                 type="range"
                 id="duration"
@@ -361,9 +371,9 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
                 step="5"
                 value={formData.duration}
                 onChange={handleInputChange}
-                className="w-full h-3 bg-gradient-to-r from-blue-200 to-indigo-200 dark:from-blue-700 dark:to-indigo-700 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full slider"
               />
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-4">
+              <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-4 font-medium">
                 <span>5m</span>
                 <span>15m</span>
                 <span>30m</span>
