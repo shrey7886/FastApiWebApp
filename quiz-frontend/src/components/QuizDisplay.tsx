@@ -214,7 +214,7 @@ export default function QuizDisplay({ quiz, tenant_id, token }: QuizDisplayProps
                 <span className="text-2xl">💡</span>
               </div>
               <p className="text-gray-600 dark:text-gray-400">
-                Click "Refresh" to load similar questions for practice
+                Click &quot;Refresh&quot; to load similar questions for practice
               </p>
             </div>
           )}

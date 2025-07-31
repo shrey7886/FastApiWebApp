@@ -334,7 +334,7 @@ export default function Dashboard() {
               <Brain className="w-5 h-5 text-purple-500 dark:text-purple-400" />
               <CardTitle>AI Learning Assistant</CardTitle>
             </div>
-            <p className="text-gray-500 dark:text-gray-400">Hello! I'm here to help you learn and understand topics better.</p>
+            <p className="text-gray-500 dark:text-gray-400">Hello! I&apos;m here to help you learn and understand topics better.</p>
           </CardHeader>
           <CardContent>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
@@ -345,7 +345,7 @@ export default function Dashboard() {
                 <span className="font-medium">AI Learning Assistant</span>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                Hello! I'm here to help you learn and understand topics better.
+                Hello! I&apos;m here to help you learn and understand topics better.
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Ask me anything about the quiz or related topics!

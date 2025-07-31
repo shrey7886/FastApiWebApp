@@ -221,7 +221,7 @@ const QuizResults: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Quiz Results</h1>
-              <p className="text-gray-600">Here's how you performed</p>
+                              <p className="text-gray-600">Here&apos;s how you performed</p>
             </div>
             <Button
               variant="outline"
@@ -239,7 +239,7 @@ const QuizResults: React.FC = () => {
           <Alert className="mb-6 border-green-200 bg-green-50">
             <Trophy className="h-4 w-4 text-green-600" />
             <AlertDescription>
-              <strong>Congratulations!</strong> You've earned new achievements: {newAchievements.join(', ')}
+              <strong>Congratulations!</strong> You&apos;ve earned new achievements: {newAchievements.join(', ')}
             </AlertDescription>
           </Alert>
         )}
