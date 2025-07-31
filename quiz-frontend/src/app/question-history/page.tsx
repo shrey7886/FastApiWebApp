@@ -2,9 +2,9 @@
 
 export const dynamic = 'force-dynamic';
 
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
-const ClientOnlyPage = dynamic(() => import('./ClientOnlyPage'), { ssr: false });
+const ClientOnlyPage = dynamicImport(() => import('./ClientOnlyPage'), { ssr: false });
 
 export default function Page() {
   return <ClientOnlyPage />;
