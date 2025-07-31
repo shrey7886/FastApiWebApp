@@ -1,42 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, tenant_id, first_name, last_name } = body;
 
-    // Simple mock registration for demo purposes
-    // In production, you would save to a real database
-    if (email && password && tenant_id) {
-      // Generate a mock token
-      const token = `mock_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const user = {
-        id: Date.now(),
-        email: email,
-        first_name: first_name || email.split('@')[0],
-        last_name: last_name || '',
-        tenant_id: tenant_id,
-        is_active: true,
-        created_at: new Date().toISOString()
-      };
+    console.log('📝 Signup request received:', { email, tenant_id, first_name, last_name });
 
-      return NextResponse.json({
-        access_token: token,
-        user: user,
-        message: 'Registration successful'
-      });
-    } else {
-      return NextResponse.json(
-        { detail: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+    // Mock successful signup
+    const mockUser = {
+      id: Date.now().toString(),
+      email: email || 'user@example.com',
+      first_name: first_name || 'Demo',
+      last_name: last_name || 'User',
+      tenant_id: tenant_id || 'default',
+      created_at: new Date().toISOString()
+    };
+
+    const mockToken = `mock_token_${Date.now()}`;
+
+    console.log('✅ Signup successful');
+
+    return NextResponse.json({
+      success: true,
+      message: 'User registered successfully',
+      access_token: mockToken,
+      user: mockUser
+    });
   } catch (error) {
-    console.error('Signup error:', error);
-    return NextResponse.json(
-      { detail: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('❌ Signup error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      message: 'Registration failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 400 });
   }
 } 

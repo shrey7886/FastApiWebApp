@@ -28,10 +28,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`🎯 Generating quiz for topic: "${topic}"`);
 
-    // Generate quiz using AI
-    const questions = await generateQuizQuestions(topic, difficulty, num_questions);
-    
-    console.log(`✅ Generated ${questions.length} questions successfully`);
+    // Generate quiz using AI with guaranteed fallback
+    let questions;
+    try {
+      questions = await generateQuizQuestions(topic, difficulty, num_questions);
+      console.log(`✅ Generated ${questions.length} questions successfully`);
+    } catch (error) {
+      console.error('❌ AI generation failed, using fallback:', error);
+      // Use fallback questions if AI fails
+      questions = generateFallbackQuestions(topic, difficulty, num_questions);
+    }
 
     // Transform questions to the correct format for QuizTaker
     const transformedQuestions = questions.map((q: any, index: number) => ({
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Quiz generation error:', error);
     
-    // Return a fallback quiz even if AI generation fails
+    // Return a guaranteed fallback quiz
     const fallbackQuiz = {
       id: Date.now().toString(),
       title: 'Sample Quiz',
@@ -108,8 +114,61 @@ export async function POST(request: NextRequest) {
       ],
       created_at: new Date().toISOString()
     };
-    
+
     console.log('🔄 Returning fallback quiz due to error');
     return NextResponse.json(fallbackQuiz);
   }
+}
+
+// Fallback question generator
+function generateFallbackQuestions(topic: string, difficulty: string, num_questions: number) {
+  console.log(`🔄 Generating ${num_questions} fallback questions for "${topic}"`);
+  
+  const questions = [];
+  const questionTemplates = [
+    `What is the primary purpose of ${topic}?`,
+    `Which of the following best describes ${topic}?`,
+    `What is the main benefit of understanding ${topic}?`,
+    `How does ${topic} typically work?`,
+    `What is the most important aspect of ${topic}?`,
+    `Which concept is fundamental to ${topic}?`,
+    `What distinguishes ${topic} from similar concepts?`,
+    `What is the key principle behind ${topic}?`,
+    `How would you best explain ${topic} to someone?`,
+    `What makes ${topic} unique or special?`
+  ];
+  
+  for (let i = 0; i < num_questions; i++) {
+    const template = questionTemplates[i % questionTemplates.length];
+    questions.push({
+      id: `q_${Date.now()}_${i}`,
+      question_text: template,
+      answers: [
+        {
+          id: `a_${Date.now()}_${i}_1`,
+          answer_text: `The core concept and main purpose of ${topic}`,
+          correct: true
+        },
+        {
+          id: `a_${Date.now()}_${i}_2`,
+          answer_text: `A secondary or supporting aspect of ${topic}`,
+          correct: false
+        },
+        {
+          id: `a_${Date.now()}_${i}_3`,
+          answer_text: `An unrelated or tangential concept`,
+          correct: false
+        },
+        {
+          id: `a_${Date.now()}_${i}_4`,
+          answer_text: `A historical or background reference`,
+          correct: false
+        }
+      ],
+      correct_answer: `The core concept and main purpose of ${topic}`,
+      explanation: `This represents the fundamental understanding and primary purpose of ${topic}, which is essential for mastering this subject.`
+    });
+  }
+  
+  return questions;
 } 

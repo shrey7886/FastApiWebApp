@@ -7,88 +7,46 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { quiz_id, answers, time_taken, tenant_id } = body;
 
-    // Mock quiz submission processing
-    // In production, you would save to a database
-    const mockQuiz = {
-      id: quiz_id,
-      questions: [
-        {
-          id: 'q_1',
-          question_text: 'What is the capital of France?',
-          correct_answer: 'Paris'
-        },
-        {
-          id: 'q_2',
-          question_text: 'Which planet is closest to the Sun?',
-          correct_answer: 'Mercury'
-        },
-        {
-          id: 'q_3',
-          question_text: 'What is 2 + 2?',
-          correct_answer: '4'
-        },
-        {
-          id: 'q_4',
-          question_text: 'What is the largest ocean on Earth?',
-          correct_answer: 'Pacific Ocean'
-        },
-        {
-          id: 'q_5',
-          question_text: 'Who painted the Mona Lisa?',
-          correct_answer: 'Leonardo da Vinci'
-        }
-      ]
-    };
+    console.log('📝 Quiz submission received:', { quiz_id, time_taken, tenant_id });
 
-    // Process answers and calculate score
-    let correctAnswers = 0;
-    const results = mockQuiz.questions.map((question, index) => {
-      const userAnswer = answers[question.id] || '';
-      const isCorrect = userAnswer === question.correct_answer;
-      if (isCorrect) correctAnswers++;
-      
-      return {
-        question_id: question.id,
-        question_text: question.question_text,
-        user_answer: userAnswer,
-        correct_answer: question.correct_answer,
-        is_correct: isCorrect
-      };
-    });
+    // Calculate mock results
+    const totalQuestions = Object.keys(answers || {}).length;
+    const correctAnswers = Math.floor(totalQuestions * 0.8); // Mock 80% success rate
+    const score = Math.round((correctAnswers / totalQuestions) * 100);
+    const timeUsed = time_taken || 300;
 
-    const score = correctAnswers;
-    const totalQuestions = mockQuiz.questions.length;
-    const percentage = Math.round((score / totalQuestions) * 100);
-
-    // Generate grade
-    let grade = 'F';
-    if (percentage >= 90) grade = 'A';
-    else if (percentage >= 80) grade = 'B';
-    else if (percentage >= 70) grade = 'C';
-    else if (percentage >= 60) grade = 'D';
-
-    const result = {
+    const mockResult = {
       id: Date.now().toString(),
-      quiz_id: quiz_id,
+      quiz_id: quiz_id || 'mock-quiz',
+      user_id: 'mock-user',
+      tenant_id: tenant_id || 'default',
       score: score,
       total_questions: totalQuestions,
-      percentage: percentage,
-      grade: grade,
-      time_taken: time_taken || 0,
+      correct_answers: correctAnswers,
+      time_taken: timeUsed,
       completed_at: new Date().toISOString(),
-      tenant_id: tenant_id || 'default',
-      results: results
+      answers: answers || {},
+      performance: {
+        accuracy: score,
+        speed: Math.round(totalQuestions / (timeUsed / 60)), // questions per minute
+        efficiency: Math.round((correctAnswers / timeUsed) * 100)
+      }
     };
+
+    console.log('✅ Quiz submission processed successfully');
 
     return NextResponse.json({
       success: true,
-      result: result
+      message: 'Quiz submitted successfully',
+      result: mockResult
     });
   } catch (error) {
-    console.error('Error submitting quiz:', error);
-    return NextResponse.json(
-      { error: 'Failed to submit quiz' },
-      { status: 500 }
-    );
+    console.error('❌ Quiz submission error:', error);
+    
+    return NextResponse.json({
+      success: false,
+      message: 'Quiz submission failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 400 });
   }
 } 

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   return NextResponse.json({
     status: 'healthy',
-    message: 'Quizlet AI Quiz Generator API is running',
-    version: '2.0.0'
+    message: 'Quizlet API is running',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
   });
 } 
