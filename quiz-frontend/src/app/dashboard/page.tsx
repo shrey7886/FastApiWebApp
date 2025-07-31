@@ -26,7 +26,10 @@ import {
   Play,
   Calendar,
   Users,
-  Activity
+  Activity,
+  Loader2,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useUser } from '@/components/UserContext';
@@ -67,6 +70,8 @@ export default function Dashboard() {
   const [chatMessage, setChatMessage] = useState('');
   const [chatHistory, setChatHistory] = useState<Array<{type: 'user' | 'ai', message: string}>>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -74,6 +79,9 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       // Fetch performance data
       const performanceResponse = await fetch('/api/analytics/user', {
         headers: {
@@ -99,50 +107,66 @@ export default function Dashboard() {
 
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
-        const formattedAttempts = historyData.history?.map((quiz: any) => ({
-          id: quiz.quiz_id,
-          score: quiz.score,
-          totalQuestions: quiz.total_questions,
-          completedOn: new Date(quiz.completed_at).toLocaleDateString(),
-          percentage: Math.round((quiz.score / quiz.total_questions) * 100)
-        })) || [];
-        setAttempts(formattedAttempts);
+        if (historyData.success && historyData.history) {
+          const formattedAttempts = historyData.history.map((quiz: any) => ({
+            id: quiz.quiz_id || quiz.id,
+            score: quiz.score || 0,
+            totalQuestions: quiz.total_questions || 5,
+            completedOn: new Date(quiz.completed_at || quiz.created_at).toLocaleDateString(),
+            percentage: Math.round(((quiz.score || 0) / (quiz.total_questions || 5)) * 100)
+          }));
+          setAttempts(formattedAttempts);
+        }
       }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
       setIsLoading(false);
     }
   };
 
   const sendChatMessage = async () => {
-    if (!chatMessage.trim()) return;
-
-    const userMessage = chatMessage;
+    if (!chatMessage.trim() || isChatLoading) return;
+    
+    const userMessage = chatMessage.trim();
     setChatMessage('');
+    setIsChatLoading(true);
     
     // Add user message to chat
     setChatHistory(prev => [...prev, { type: 'user', message: userMessage }]);
     
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = `I'm here to help you with your learning journey! You can ask me about quiz topics, study strategies, or any questions you have.`;
-      setChatHistory(prev => [...prev, { type: 'ai', message: aiResponse }]);
-    }, 1000);
+    try {
+      // Simulate AI response (in real app, this would call an AI service)
+      const aiResponses = [
+        "Great question! Based on your learning patterns, I'd recommend focusing on practice questions in that area.",
+        "I can see you're making excellent progress! Your recent quiz scores show improvement.",
+        "That's an interesting topic! Would you like me to generate a quiz specifically about that subject?",
+        "Based on your performance data, you might want to review the fundamentals before moving to advanced topics.",
+        "Excellent work! Your study streak is impressive. Keep up the momentum!"
+      ];
+      
+      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+      
+      // Simulate delay for realistic feel
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setChatHistory(prev => [...prev, { type: 'ai', message: randomResponse }]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setChatHistory(prev => [...prev, { type: 'ai', message: 'Sorry, I encountered an error. Please try again.' }]);
+    } finally {
+      setIsChatLoading(false);
+    }
   };
-
-  const relatedTopics = ['Algebra', 'Calculus', 'Statistics', 'Geometry', 'Trigonometry'];
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
-            </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <p className="text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -151,32 +175,53 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Welcome back, {user?.first_name || 'Learner'}! 👋
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2 text-lg">
-                Ready to continue your learning journey?
-              </p>
+      {/* Header */}
+      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Learning Dashboard</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Welcome back, {user?.first_name || 'Learner'}! Ready to ace your next quiz?
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
+              <ThemeToggle />
               <Button
                 onClick={() => router.push('/create-quiz')}
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
               >
-                <Play className="w-5 h-5 mr-2" />
-                Start New Quiz
+                <Play className="w-4 h-4 mr-2" />
+                New Quiz
               </Button>
-              <ThemeToggle />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Quick Stats Cards */}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-center space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-500" />
+            <p className="text-red-700 dark:text-red-300">{error}</p>
+            <Button
+              onClick={fetchDashboardData}
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-700"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Performance Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
             <CardContent className="p-6 text-white">
@@ -240,7 +285,7 @@ export default function Dashboard() {
           {/* Left Column - Recent Activity & Quick Actions */}
           <div className="lg:col-span-2 space-y-6">
             {/* Recent Quiz Attempts */}
-            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-xl font-semibold flex items-center">
@@ -250,7 +295,7 @@ export default function Dashboard() {
                   <Button
                     variant="ghost"
                     onClick={() => router.push('/question-history')}
-                    className="text-blue-600 hover:text-blue-700"
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                   >
                     View All
                     <ArrowRight className="w-4 h-4 ml-1" />
@@ -261,7 +306,7 @@ export default function Dashboard() {
                 {attempts.length > 0 ? (
                   <div className="space-y-4">
                     {attempts.slice(0, 5).map((attempt, index) => (
-                      <div key={attempt.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-blue-900/20 rounded-xl border border-gray-100 dark:border-gray-600">
+                      <div key={attempt.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-700 dark:to-blue-900/20 rounded-xl border border-gray-100 dark:border-gray-600 hover:shadow-md transition-all duration-200">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold">
                             {index + 1}
@@ -285,13 +330,17 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">No quiz attempts yet. Start your first quiz!</p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No quiz attempts yet</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">Start your learning journey with your first quiz!</p>
                     <Button
                       onClick={() => router.push('/create-quiz')}
-                      className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                     >
+                      <Play className="w-4 h-4 mr-2" />
                       Create Your First Quiz
                     </Button>
                   </div>
@@ -300,18 +349,21 @@ export default function Dashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center">
                   <Zap className="w-5 h-5 mr-2 text-yellow-600" />
                   Quick Actions
                 </CardTitle>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Jump into learning with these quick actions
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Button
                     onClick={() => router.push('/create-quiz')}
-                    className="h-20 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="h-20 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                   >
                     <div className="text-center">
                       <Play className="w-6 h-6 mx-auto mb-2" />
@@ -320,7 +372,7 @@ export default function Dashboard() {
                   </Button>
                   <Button
                     onClick={() => router.push('/question-history')}
-                    className="h-20 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="h-20 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                   >
                     <div className="text-center">
                       <History className="w-6 h-6 mx-auto mb-2" />
@@ -329,7 +381,7 @@ export default function Dashboard() {
                   </Button>
                   <Button
                     onClick={() => router.push('/analytics')}
-                    className="h-20 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="h-20 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                   >
                     <div className="text-center">
                       <BarChart3 className="w-6 h-6 mx-auto mb-2" />
@@ -338,7 +390,7 @@ export default function Dashboard() {
                   </Button>
                   <Button
                     onClick={() => router.push('/topics')}
-                    className="h-20 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="h-20 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                   >
                     <div className="text-center">
                       <BookOpen className="w-6 h-6 mx-auto mb-2" />
@@ -353,7 +405,7 @@ export default function Dashboard() {
           {/* Right Column - AI Assistant & Stats */}
           <div className="space-y-6">
             {/* AI Learning Assistant */}
-            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center">
                   <Brain className="w-5 h-5 mr-2 text-purple-600" />
@@ -365,10 +417,12 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {/* Chat History */}
-                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                   {chatHistory.length === 0 ? (
-                    <div className="text-center py-4">
-                      <Brain className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Brain className="w-6 h-6 text-purple-600" />
+                      </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Start a conversation to get help with your learning!
                       </p>
@@ -386,6 +440,13 @@ export default function Dashboard() {
                       </div>
                     ))
                   )}
+                  {isChatLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 text-gray-800 dark:text-gray-200 p-3 rounded-xl">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Chat Input */}
@@ -396,19 +457,25 @@ export default function Dashboard() {
                     onChange={(e) => setChatMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendChatMessage()}
                     className="flex-1"
+                    disabled={isChatLoading}
                   />
                   <Button 
                     onClick={sendChatMessage}
-                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                    disabled={isChatLoading || !chatMessage.trim()}
+                    className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:opacity-50"
                   >
-                    <Send className="w-4 h-4" />
+                    {isChatLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* Performance Insights */}
-            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl">
+            <Card className="bg-white dark:bg-gray-800 border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold flex items-center">
                   <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
@@ -416,7 +483,7 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl hover:shadow-md transition-all duration-200">
                   <div className="flex items-center">
                     <Star className="w-5 h-5 text-yellow-500 mr-2" />
                     <span className="font-medium">Study Streak</span>
@@ -426,7 +493,7 @@ export default function Dashboard() {
                   </Badge>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl hover:shadow-md transition-all duration-200">
                   <div className="flex items-center">
                     <Target className="w-5 h-5 text-blue-500 mr-2" />
                     <span className="font-medium">Accuracy</span>
@@ -436,7 +503,7 @@ export default function Dashboard() {
                   </Badge>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
+                <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl hover:shadow-md transition-all duration-200">
                   <div className="flex items-center">
                     <Award className="w-5 h-5 text-purple-500 mr-2" />
                     <span className="font-medium">Best Score</span>
@@ -452,4 +519,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-} 
+}
