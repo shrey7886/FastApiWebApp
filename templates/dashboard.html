@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AI Quiz App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-light bg-light shadow-sm" style="backdrop-filter: blur(10px); background: rgba(255,255,255,0.85) !important;">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="/" style="font-size: 2rem; letter-spacing: 1px;">Quiziac</a>
+    <a href="/history" class="btn btn-outline-secondary ms-2">
+      <span class="fas fa-history"></span> History
+    </a>
+    <button id="theme-toggle" class="btn btn-outline-primary ms-2" onclick="toggleTheme()">
+      <span id="theme-icon" class="fas fa-moon"></span>
+    </button>
+  </div>
+</nav>
+<div class="container py-5">
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="glass-card p-4 mb-4 animate__animated animate__fadeInUp">
+        <h2 class="fw-bold mb-3" style="font-size:2.2rem;">Welcome to your Dashboard</h2>
+        <p class="lead mb-4">Create quizzes, track your progress, and master any topic with AI-powered questions.</p>
+        <a href="/create-quiz" class="btn btn-primary btn-lg shadow-sm animate__animated animate__pulse animate__infinite">Create New Quiz</a>
+      </div>
+      <div class="row g-4 mt-2">
+        <div class="col-md-6">
+          <div class="glass-card p-4 text-center animate__animated animate__fadeInLeft">
+            <div class="mb-2"><i class="fas fa-book fa-2x text-primary"></i></div>
+            <h5 class="fw-bold">Quizzes Created</h5>
+            <div class="display-6 fw-bold">0</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="glass-card p-4 text-center animate__animated animate__fadeInRight">
+            <div class="mb-2"><i class="fas fa-user-check fa-2x text-success"></i></div>
+            <h5 class="fw-bold">Quiz Attempts</h5>
+            <div class="display-6 fw-bold">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="glass-card p-4 animate__animated animate__fadeInUp">
+        <h5 class="fw-bold mb-3">Features</h5>
+        <ul class="list-unstyled mb-0">
+          <li class="mb-2"><i class="fas fa-magic text-info me-2"></i> AI-Powered Questions</li>
+          <li class="mb-2"><i class="fas fa-users text-warning me-2"></i> Multi-User Support</li>
+          <li class="mb-2"><i class="fas fa-chart-line text-success me-2"></i> Performance Analytics</li>
+          <li class="mb-2"><i class="fas fa-mobile-alt text-primary me-2"></i> Responsive Design</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script>
+// Load dashboard data on page load
+window.onload = function() {
+    loadQuizHistory();
+    loadPerformanceSummary();
+    loadRecentResults();
+};
+
+function getToken() {
+    return localStorage.getItem('token');
+}
+
+function loadQuizHistory() {
+    const token = getToken();
+    if (!token) return;
+    fetch('/quiz-results?tenant_id=' + getTenantId(), {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(results => {
+        const container = document.getElementById('quizHistory');
+        if (!results.length) {
+            container.innerHTML = '<div class="alert alert-info">No quiz history yet.</div>';
+            return;
+        }
+        let html = '<table class="table table-striped"><thead><tr><th>Quiz</th><th>Score</th><th>Date</th><th>Action</th></tr></thead><tbody>';
+        results.forEach(r => {
+            html += `<tr><td>${r.quiz_id}</td><td>${r.score}/${r.total_questions}</td><td>${new Date(r.completed_at).toLocaleString()}</td><td><a href="/results/${r.id}" class="btn btn-sm btn-outline-primary">View</a></td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    });
+}
+
+function loadPerformanceSummary() {
+    const token = getToken();
+    if (!token) return;
+    fetch('/quiz-results?tenant_id=' + getTenantId(), {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(results => {
+        const container = document.getElementById('performanceSummary');
+        if (!results.length) {
+            container.innerHTML = '<div class="alert alert-info">No performance data yet.</div>';
+            return;
+        }
+        let total = results.length;
+        let totalScore = results.reduce((sum, r) => sum + r.score, 0);
+        let totalQuestions = results.reduce((sum, r) => sum + r.total_questions, 0);
+        let avg = totalQuestions ? Math.round((totalScore / totalQuestions) * 100) : 0;
+        container.innerHTML = `<div class="text-center"><h4>${avg}%</h4><p class="text-muted">Average Score</p></div>`;
+    });
+}
+
+function loadRecentResults() {
+    const token = getToken();
+    if (!token) return;
+    fetch('/quiz-results?tenant_id=' + getTenantId(), {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(results => {
+        const container = document.getElementById('recentResults');
+        if (!results.length) {
+            container.innerHTML = '<div class="alert alert-info">No recent results.</div>';
+            return;
+        }
+        let html = '<ul class="list-group">';
+        results.slice(0, 5).forEach(r => {
+            html += `<li class="list-group-item d-flex justify-content-between align-items-center">Quiz ${r.quiz_id} <span class="badge bg-primary">${r.score}/${r.total_questions}</span></li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+    });
+}
+
+function getTenantId() {
+    // TODO: Store/retrieve tenant_id from login/signup or user profile
+    return localStorage.getItem('tenant_id') || '';
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+}
+
+function setTheme(dark) {
+  if (dark) {
+    document.body.classList.add('dark-mode');
+    document.getElementById('theme-icon').className = 'fas fa-sun';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark-mode');
+    document.getElementById('theme-icon').className = 'fas fa-moon';
+    localStorage.setItem('theme', 'light');
+  }
+}
+function toggleTheme() {
+  setTheme(!document.body.classList.contains('dark-mode'));
+}
+window.onload = function() {
+  const theme = localStorage.getItem('theme');
+  setTheme(theme === 'dark');
+};
+</script>
+</body>
+</html> 

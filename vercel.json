@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "buildCommand": "cd quiz-frontend && npm install && npm run build",
+  "outputDirectory": "quiz-frontend/.next",
+  "installCommand": "cd quiz-frontend && npm install",
+  "framework": "nextjs",
+  "functions": {
+    "api/**/*.py": {
+      "maxDuration": 30,
+      "runtime": "python3.9"
+    }
+  },
+  "env": {
+    "PYTHONPATH": ".",
+    "DATABASE_URL": "@database_url",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "SECRET_KEY": "@secret_key"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    }
+  ]
+} 

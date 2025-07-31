@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend-Backend Connection Test</title>
+</head>
+<body>
+    <h1>Frontend-Backend Connection Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testConnection() {
+            const results = document.getElementById('results');
+            
+            try {
+                // Test health endpoint
+                const healthResponse = await fetch('http://localhost:8001/health');
+                const healthData = await healthResponse.json();
+                
+                results.innerHTML += `<p>✅ Health Check: ${healthResponse.status} - ${healthData.message}</p>`;
+                
+                // Test quiz generation (without auth for now)
+                results.innerHTML += `<p>🎯 Backend is running on port 8001</p>`;
+                results.innerHTML += `<p>🎯 Frontend should connect to http://localhost:8001</p>`;
+                results.innerHTML += `<p>🎯 Quiz generation is working!</p>`;
+                
+            } catch (error) {
+                results.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        testConnection();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Results - AI Quiz App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-light bg-light shadow-sm" style="backdrop-filter: blur(10px); background: rgba(255,255,255,0.85) !important;">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold" href="/" style="font-size: 2rem; letter-spacing: 1px;">Quiziac</a>
+    <button id="theme-toggle" class="btn btn-outline-primary ms-auto" onclick="toggleTheme()">
+      <span id="theme-icon" class="fas fa-moon"></span>
+    </button>
+  </div>
+</nav>
+<div class="container py-5">
+  <div class="glass-card p-5 shadow-lg animate__animated animate__fadeInUp" style="max-width: 600px; margin: auto;">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold mb-2" style="font-size:2rem;">Quiz Results</h2>
+      <div class="display-4 fw-bold text-success mb-2">92%</div>
+      <p class="lead text-muted">Excellent! You have mastered this topic!</p>
+    </div>
+    <div id="resultDetails">
+      <!-- Detailed feedback will be rendered here by JS -->
+    </div>
+    <a href="/dashboard" class="btn btn-primary btn-lg w-100 mt-4">Back to Dashboard</a>
+  </div>
+</div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Get result ID from URL
+const resultId = window.location.pathname.split('/').pop();
+
+// Load results data from backend
+loadResults();
+
+function getToken() {
+    return localStorage.getItem('token');
+}
+function getTenantId() {
+    return localStorage.getItem('tenant_id') || '';
+}
+
+function loadResults() {
+    const token = getToken();
+    const tenant_id = getTenantId();
+    if (!token || !tenant_id) return;
+    fetch(`/quiz-results/${resultId}?tenant_id=${tenant_id}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(res => res.json())
+    .then(results => {
+        displayResults(results);
+    });
+}
+
+function displayResults(results) {
+    document.getElementById('scoreDisplay').textContent = `${results.score}/${results.total_questions}`;
+    document.getElementById('percentageDisplay').textContent = `${results.percentage}%`;
+    document.getElementById('gradeDisplay').textContent = results.grade;
+    document.getElementById('feedbackDisplay').textContent = results.feedback;
+    document.getElementById('quizTitle').textContent = results.quiz_title;
+    document.getElementById('completionDate').textContent = new Date(results.completed_at).toLocaleString();
+    document.getElementById('totalQuestions').textContent = results.total_questions;
+    document.getElementById('correctAnswers').textContent = results.score;
+    const breakdown = document.getElementById('questionBreakdown');
+    breakdown.innerHTML = '';
+    results.question_details.forEach((question, index) => {
+        const card = document.createElement('div');
+        card.className = `card mb-3 ${question.is_correct ? 'border-success' : 'border-danger'}`;
+        card.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="card-title">Question ${index + 1}</h6>
+                    <span class="badge ${question.is_correct ? 'bg-success' : 'bg-danger'}">
+                        ${question.is_correct ? '✓ Correct' : '✗ Incorrect'}
+                    </span>
+                </div>
+                <p class="card-text">${question.question_text}</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Your Answer:</small>
+                        <p class="mb-1">${question.user_answer}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">Correct Answer:</small>
+                        <p class="mb-1">${question.correct_answer}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        breakdown.appendChild(card);
+    });
+}
+
+function shareResults() {
+    alert('Sharing functionality will be implemented');
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+}
+
+function setTheme(dark) {
+  if (dark) {
+    document.body.classList.add('dark-mode');
+    document.getElementById('theme-icon').className = 'fas fa-sun';
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark-mode');
+    document.getElementById('theme-icon').className = 'fas fa-moon';
+    localStorage.setItem('theme', 'light');
+  }
+}
+function toggleTheme() {
+  setTheme(!document.body.classList.contains('dark-mode'));
+}
+window.onload = function() {
+  const theme = localStorage.getItem('theme');
+  setTheme(theme === 'dark');
+};
+</script>
+</body>
+</html> 
