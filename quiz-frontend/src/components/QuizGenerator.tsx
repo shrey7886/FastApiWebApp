@@ -34,15 +34,6 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
 
   // Dynamic topic suggestions based on common interests
   const topicSuggestions = {
-    'Personal Interests': [
-      'Your Hobby', 'Favorite Movie', 'Dream Job', 'Pet Name', 'Home Town', 
-      'Favorite Food', 'School Subject', 'Travel Destination', 'Sports Team', 
-      'Music Genre', 'Book Title', 'Scientific Concept'
-    ],
-    'Creative Topics': [
-      'Art Style', 'Music Band', 'Movie Genre', 'Book Series', 'Video Game', 
-      'Dance Style', 'Photography', 'Crafting', 'Writing', 'Design'
-    ],
     'Academic Subjects': [
       'Mathematics', 'Science', 'History', 'Geography', 'Literature', 
       'Philosophy', 'Psychology', 'Economics', 'Politics', 'Languages'
@@ -52,13 +43,21 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
       'Virtual Reality', 'Cybersecurity', 'Data Science', 'Mobile Apps', 
       'Web Development', 'Blockchain'
     ],
-    'Nature & Environment': [
-      'Animals', 'Plants', 'Weather', 'Climate', 'Oceans', 'Mountains', 
-      'Forests', 'Deserts', 'Rivers', 'Ecosystems'
+    'Creative Arts': [
+      'Art History', 'Music Theory', 'Film Studies', 'Creative Writing', 
+      'Photography', 'Design Principles', 'Architecture', 'Fashion Design'
     ],
-    'Daily Life': [
-      'Cooking', 'Fitness', 'Health', 'Relationships', 'Work', 'Education', 
-      'Transportation', 'Communication', 'Entertainment', 'Shopping'
+    'Business & Finance': [
+      'Marketing', 'Finance', 'Entrepreneurship', 'Management', 
+      'Economics', 'Accounting', 'Business Strategy', 'Investment'
+    ],
+    'Health & Wellness': [
+      'Nutrition', 'Fitness', 'Mental Health', 'Medical Science', 
+      'Public Health', 'Anatomy', 'Physiology', 'Wellness'
+    ],
+    'Personal Development': [
+      'Leadership', 'Communication', 'Time Management', 'Goal Setting', 
+      'Stress Management', 'Personal Finance', 'Career Development'
     ]
   }
 
@@ -83,8 +82,8 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
     setError(null);
 
     try {
-      console.log('🚀 Starting quiz generation...');
-      console.log('📋 Form data:', formData);
+      console.log('Starting quiz generation...');
+      console.log('Form data:', formData);
 
       // Call the API with the correct structure
       const quizData = await generateQuiz({
@@ -96,7 +95,7 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
         token: token || undefined
       });
 
-      console.log('✅ Quiz generated successfully:', quizData);
+      console.log('Quiz generated successfully:', quizData);
 
       // Navigate to the quiz taking page
       if (quizData && quizData.id) {
@@ -106,7 +105,7 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
       }
 
     } catch (error) {
-      console.error('❌ Quiz generation error:', error);
+      console.error('Quiz generation error:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate quiz');
     } finally {
       setLoading(false);
@@ -127,9 +126,9 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
   };
 
   const difficultyColors = {
-    easy: 'from-green-400 to-emerald-500',
-    medium: 'from-yellow-400 to-orange-500',
-    hard: 'from-red-400 to-pink-500'
+    easy: 'from-green-500 to-emerald-500',
+    medium: 'from-yellow-500 to-orange-500',
+    hard: 'from-red-500 to-pink-500'
   };
 
   return (
@@ -137,7 +136,7 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
@@ -231,7 +230,7 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
                 {/* Custom topic message */}
                 <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                    💡 <strong>Pro Tip:</strong> You can enter any topic! The AI will generate relevant questions for whatever you choose.
+                    <strong>Pro Tip:</strong> You can enter any topic! The AI will generate relevant questions for whatever you choose.
                   </p>
                 </div>
               </div>
@@ -259,12 +258,12 @@ export default function QuizGenerator({ onQuizGenerated }: QuizGeneratorProps) {
                   }`}
                 >
                   <div className="text-center">
-                    <div className="text-2xl mb-2">
-                      {level === 'easy' && '😊'}
-                      {level === 'medium' && '😐'}
-                      {level === 'hard' && '😰'}
-                    </div>
                     <div className="text-sm font-semibold capitalize">{level}</div>
+                    <div className="text-xs opacity-80 mt-1">
+                      {level === 'easy' && 'Beginner friendly'}
+                      {level === 'medium' && 'Moderate challenge'}
+                      {level === 'hard' && 'Advanced level'}
+                    </div>
                   </div>
                 </button>
               ))}
