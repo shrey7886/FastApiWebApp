@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Brain, Search, BookOpen, Clock, Target, TrendingUp, Sparkles, Plus, Zap } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+// Ensure dynamic rendering
+export const dynamic = 'force-dynamic';
+
 interface Topic {
   id: string;
   name: string;
@@ -35,6 +38,7 @@ export default function TopicsPage() {
   const [customQuestionCount, setCustomQuestionCount] = useState(10);
 
   useEffect(() => {
+    console.log('🎯 Topics page loaded');
     fetchTopics();
   }, []);
 

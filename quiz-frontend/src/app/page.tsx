@@ -183,7 +183,10 @@ export default function LandingPage() {
                 <Button 
                   variant="outline" 
                   size="lg"
-                  onClick={() => router.push('/topics')}
+                  onClick={() => {
+                    console.log('🎯 Explore Topics button clicked - routing to /topics');
+                    router.push('/topics');
+                  }}
                   className="border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 px-8 py-4 text-lg font-semibold transition-all duration-300 transform hover:-translate-y-1"
                 >
                   <BookOpen className="w-6 h-6 mr-3" />
@@ -321,7 +324,10 @@ export default function LandingPage() {
             <Button 
               size="lg"
               variant="outline"
-              onClick={() => router.push('/topics')}
+              onClick={() => {
+                console.log('🎯 Explore Topics button (CTA) clicked - routing to /topics');
+                router.push('/topics');
+              }}
               className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-4 text-lg font-semibold transition-all duration-300 transform hover:-translate-y-1"
             >
               <BookOpen className="w-6 h-6 mr-3" />
