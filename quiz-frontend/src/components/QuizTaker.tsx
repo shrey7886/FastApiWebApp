@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,38 +66,7 @@ export default function QuizTaker() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
 
-  useEffect(() => {
-    if (quizId) {
-      loadQuiz();
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [quizId]);
-
-  useEffect(() => {
-    if (quiz && timeLeft > 0 && !isPaused) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleTimeUp();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [quiz, timeLeft, isPaused]);
-
-  const loadQuiz = async () => {
+  const loadQuiz = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -121,7 +90,38 @@ export default function QuizTaker() {
       setError(`Failed to load quiz: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setLoading(false);
     }
-  };
+  }, [quizId, user?.tenant_id, token]);
+
+  useEffect(() => {
+    if (quizId) {
+      loadQuiz();
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [quizId, loadQuiz]);
+
+  useEffect(() => {
+    if (quiz && timeLeft > 0 && !isPaused) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            handleTimeUp();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [quiz, timeLeft, isPaused]);
 
   const handleAnswerSelect = (questionId: string, answer: string) => {
     setUserAnswers(prev => ({

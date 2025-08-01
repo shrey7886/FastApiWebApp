@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,11 +42,7 @@ export default function ResultsPage() {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchResult();
-  }, [resultId]);
-
-  const fetchResult = async () => {
+  const fetchResult = useCallback(async () => {
     try {
       const response = await fetch(`/api/results/${resultId}`, {
         headers: {
@@ -65,7 +61,11 @@ export default function ResultsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resultId]);
+
+  useEffect(() => {
+    fetchResult();
+  }, [fetchResult]);
 
   const getPerformanceColor = (percentage: number) => {
     if (percentage >= 90) return 'text-green-400';

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,9 +47,9 @@ interface ChatMessage {
 }
 
 const QuizResults: React.FC = () => {
-  const { resultId } = useParams<{ resultId: string }>();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const params = useParams();
+  const router = useRouter();
+  const resultId = params.id as string;
   
   const [result, setResult] = useState<QuizResult | null>(null);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
@@ -62,21 +62,11 @@ const QuizResults: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
-  useEffect(() => {
-    if (location.state?.result) {
-      setResult(location.state.result);
-      setNewAchievements(location.state.newAchievements || []);
-      setLoading(false);
-    } else {
-      loadResult();
-    }
-  }, [location.state, resultId]);
-
-  const loadResult = async () => {
+  const loadResult = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        navigate('/login');
+        router.push('/login');
         return;
       }
 
@@ -98,7 +88,11 @@ const QuizResults: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resultId, router]);
+
+  useEffect(() => {
+    loadResult();
+  }, [loadResult]);
 
   const sendChatMessage = async () => {
     if (!chatInput.trim() || isSendingMessage) return;
@@ -225,7 +219,7 @@ const QuizResults: React.FC = () => {
             </div>
             <Button
               variant="outline"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => router.push('/dashboard')}
               className="flex items-center space-x-2"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -386,7 +380,7 @@ const QuizResults: React.FC = () => {
               <CardContent>
                 <div className="space-y-3">
                   <Button 
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => router.push('/dashboard')}
                     className="w-full flex items-center space-x-2"
                   >
                     <BookOpen className="h-4 w-4" />
@@ -395,7 +389,7 @@ const QuizResults: React.FC = () => {
                   
                   <Button 
                     variant="outline"
-                    onClick={() => navigate('/dashboard?tab=analytics')}
+                    onClick={() => router.push('/dashboard?tab=analytics')}
                     className="w-full flex items-center space-x-2"
                   >
                     <TrendingUp className="h-4 w-4" />

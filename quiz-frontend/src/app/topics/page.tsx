@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,30 @@ export default function TopicsPage() {
   const [customDifficulty, setCustomDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [customQuestionCount, setCustomQuestionCount] = useState(10);
 
+  const filterTopics = useCallback(() => {
+    let filtered = topics;
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(topic =>
+        topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        topic.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filter by difficulty
+    if (selectedDifficulty !== 'all') {
+      filtered = filtered.filter(topic => topic.difficulty === selectedDifficulty);
+    }
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(topic => topic.category === selectedCategory);
+    }
+
+    setFilteredTopics(filtered);
+  }, [topics, searchTerm, selectedDifficulty, selectedCategory]);
+
   useEffect(() => {
     console.log('🎯 Topics page loaded');
     fetchTopics();
@@ -44,7 +68,7 @@ export default function TopicsPage() {
 
   useEffect(() => {
     filterTopics();
-  }, [topics, searchTerm, selectedDifficulty, selectedCategory]);
+  }, [filterTopics]);
 
   const fetchTopics = async () => {
     try {
@@ -138,30 +162,6 @@ export default function TopicsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const filterTopics = () => {
-    let filtered = topics;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(topic =>
-        topic.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        topic.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by difficulty
-    if (selectedDifficulty !== 'all') {
-      filtered = filtered.filter(topic => topic.difficulty === selectedDifficulty);
-    }
-
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(topic => topic.category === selectedCategory);
-    }
-
-    setFilteredTopics(filtered);
   };
 
   const handleGenerateQuiz = async (topic: Topic) => {

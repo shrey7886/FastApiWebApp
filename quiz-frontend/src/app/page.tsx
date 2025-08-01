@@ -30,17 +30,6 @@ export default function LandingPage() {
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
 
-  useEffect(() => {
-    setIsVisible(true);
-    
-    // Auto-rotate features
-    const interval = setInterval(() => {
-      setActiveFeature((prev) => (prev + 1) % features.length);
-    }, 3000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const features = [
     {
       icon: <Brain className="w-6 h-6" />,
@@ -79,6 +68,17 @@ export default function LandingPage() {
       color: "from-indigo-500 to-purple-500"
     }
   ];
+
+  useEffect(() => {
+    setIsVisible(true);
+    
+    // Auto-rotate features
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [features.length]);
 
   const stats = [
     { label: "Topics Available", value: "∞", icon: <Globe className="w-5 h-5" /> },
