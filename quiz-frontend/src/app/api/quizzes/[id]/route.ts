@@ -13,6 +13,12 @@ export async function GET(
 
     console.log('🎯 Fetching quiz:', { quizId, tenant_id });
 
+    // Validate quiz ID
+    if (!quizId || quizId === 'undefined' || quizId === 'null') {
+      console.error('❌ Invalid quiz ID:', quizId);
+      throw new Error('Invalid quiz ID');
+    }
+
     // Generate dynamic quiz based on ID
     const quizNumber = parseInt(quizId) % 1000; // Use modulo to create variety
     const topics = ['Mathematics', 'Science', 'History', 'Geography', 'Literature', 'Technology', 'Art', 'Music', 'Sports', 'Cooking'];
@@ -45,7 +51,7 @@ export async function GET(
     
     // Return a guaranteed fallback quiz
     const fallbackQuiz = {
-      id: params.id,
+      id: params.id || 'fallback-quiz',
       title: 'Sample Quiz',
       description: 'A sample quiz with basic questions',
       topic: 'General Knowledge',

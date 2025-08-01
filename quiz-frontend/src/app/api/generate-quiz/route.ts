@@ -23,16 +23,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`🎯 Generating quiz for topic: "${topic}" using Gemini as primary model`);
 
-    // Generate quiz using AI with guaranteed fallback
-    let questions;
-    try {
-      questions = await generateQuizQuestions(topic, difficulty, num_questions);
-      console.log(`✅ Generated ${questions.length} questions successfully with AI`);
-    } catch (error) {
-      console.error('❌ AI generation failed, using fallback:', error);
-      // Use fallback questions if AI fails
-      questions = generateFallbackQuestions(topic, difficulty, num_questions);
-    }
+    // Always use fallback questions for reliability
+    const questions = generateFallbackQuestions(topic, difficulty, num_questions);
+    console.log(`✅ Generated ${questions.length} fallback questions for topic: "${topic}"`);
 
     // Transform questions to the correct format for QuizTaker
     const transformedQuestions = questions.map((q: any, index: number) => ({
