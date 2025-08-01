@@ -3,6 +3,9 @@ import { generateQuizQuestions } from '@/lib/quiz-generator';
 
 export const dynamic = 'force-dynamic';
 
+// Set Gemini API key for quiz generation
+process.env.GEMINI_API_KEY = 'AIzaSyDu1_dNgqt4kjw5J2VdBmETv_RLJBBTzS0';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -18,13 +21,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🎯 Generating quiz for topic: "${topic}"`);
+    console.log(`🎯 Generating quiz for topic: "${topic}" using Gemini as primary model`);
 
     // Generate quiz using AI with guaranteed fallback
     let questions;
     try {
       questions = await generateQuizQuestions(topic, difficulty, num_questions);
-      console.log(`✅ Generated ${questions.length} questions successfully`);
+      console.log(`✅ Generated ${questions.length} questions successfully with AI`);
     } catch (error) {
       console.error('❌ AI generation failed, using fallback:', error);
       // Use fallback questions if AI fails

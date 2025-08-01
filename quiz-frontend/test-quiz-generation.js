@@ -1,94 +1,118 @@
-// Test script to verify quiz generation functionality
-const testQuizGeneration = async () => {
+// Test script to verify quiz generation
+async function testQuizGeneration() {
   console.log('🧪 Testing Quiz Generation...');
   
   try {
-    // Test 1: Generate a quiz with basic parameters
-    console.log('\n📝 Test 1: Basic Quiz Generation');
+    // Test 1: Generate a quiz
+    console.log('\n📝 Test 1: Generating a quiz...');
+    const quizData = {
+      topic: 'Mathematics',
+      difficulty: 'medium',
+      num_questions: 5,
+      duration: 15,
+      tenant_id: 'test',
+      token: 'test-token'
+    };
+
     const response = await fetch('/api/generate-quiz', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        topic: 'JavaScript Programming',
-        difficulty: 'medium',
-        num_questions: 3,
-        duration: 10,
-        tenant_id: 'test-tenant'
-      })
+      body: JSON.stringify(quizData)
     });
-    
-    if (response.ok) {
-      const quiz = await response.json();
-      console.log('✅ Quiz generated successfully!');
-      console.log('📊 Quiz Details:', {
-        id: quiz.id,
-        title: quiz.title,
-        topic: quiz.topic,
-        difficulty: quiz.difficulty,
-        num_questions: quiz.num_questions,
-        duration: quiz.duration,
-        questions_count: quiz.questions?.length || 0
-      });
-      
-      if (quiz.questions && quiz.questions.length > 0) {
-        console.log('📋 Sample Question:', {
-          question: quiz.questions[0].question_text,
-          options: {
-            a: quiz.questions[0].option_a,
-            b: quiz.questions[0].option_b,
-            c: quiz.questions[0].option_c,
-            d: quiz.questions[0].option_d
-          },
-          correct: quiz.questions[0].correct_answer
-        });
-      }
-    } else {
-      console.error('❌ Quiz generation failed:', response.status, response.statusText);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const quiz = await response.json();
+    console.log('✅ Quiz generated successfully!');
+    console.log('📊 Quiz details:', {
+      id: quiz.id,
+      title: quiz.title,
+      topic: quiz.topic,
+      difficulty: quiz.difficulty,
+      num_questions: quiz.num_questions,
+      questions_count: quiz.questions?.length || 0
+    });
+
+    // Test 2: Fetch the generated quiz
+    console.log('\n📝 Test 2: Fetching the generated quiz...');
+    const fetchResponse = await fetch(`/api/quizzes/${quiz.id}?tenant_id=test`);
     
-    // Test 2: Test with different topic
-    console.log('\n📝 Test 2: Different Topic');
-    const response2 = await fetch('/api/generate-quiz', {
+    if (!fetchResponse.ok) {
+      throw new Error(`HTTP error! status: ${fetchResponse.status}`);
+    }
+
+    const fetchedQuiz = await fetchResponse.json();
+    console.log('✅ Quiz fetched successfully!');
+    console.log('📊 Fetched quiz details:', {
+      id: fetchedQuiz.id,
+      title: fetchedQuiz.title,
+      questions_count: fetchedQuiz.questions?.length || 0
+    });
+
+    // Test 3: Submit the quiz
+    console.log('\n📝 Test 3: Submitting the quiz...');
+    const answers = {};
+    if (fetchedQuiz.questions) {
+      fetchedQuiz.questions.forEach((q, index) => {
+        answers[q.id] = q.option_a; // Use first option as answer
+      });
+    }
+
+    const submitData = {
+      quiz_id: fetchedQuiz.id,
+      answers: answers,
+      time_taken: 300, // 5 minutes
+      tenant_id: 'test',
+      token: 'test-token'
+    };
+
+    const submitResponse = await fetch('/api/submit-quiz', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        topic: 'Space Exploration',
-        difficulty: 'easy',
-        num_questions: 2,
-        duration: 5,
-        tenant_id: 'test-tenant'
-      })
+      body: JSON.stringify(submitData)
     });
-    
-    if (response2.ok) {
-      const quiz2 = await response2.json();
-      console.log('✅ Second quiz generated successfully!');
-      console.log('📊 Quiz Details:', {
-        topic: quiz2.topic,
-        difficulty: quiz2.difficulty,
-        questions_count: quiz2.questions?.length || 0
-      });
-    } else {
-      console.error('❌ Second quiz generation failed:', response2.status, response2.statusText);
+
+    if (!submitResponse.ok) {
+      throw new Error(`HTTP error! status: ${submitResponse.status}`);
     }
-    
-    console.log('\n🎉 Quiz generation tests completed!');
-    
+
+    const result = await submitResponse.json();
+    console.log('✅ Quiz submitted successfully!');
+    console.log('📊 Submission result:', {
+      score: result.result?.score,
+      correct_answers: result.result?.correct_answers,
+      total_questions: result.result?.total_questions
+    });
+
+    console.log('\n🎉 All tests passed! Quiz generation is working properly.');
+    return true;
+
   } catch (error) {
     console.error('❌ Test failed:', error);
+    return false;
   }
-};
+}
 
 // Run the test if this script is executed directly
 if (typeof window !== 'undefined') {
   // Browser environment
   window.testQuizGeneration = testQuizGeneration;
-  console.log('🧪 Test script loaded. Run testQuizGeneration() to test quiz generation.');
+  console.log('🧪 Quiz generation test ready. Run testQuizGeneration() to test.');
 } else {
   // Node.js environment
-  testQuizGeneration();
+  testQuizGeneration().then(success => {
+    if (success) {
+      console.log('✅ All endpoints are working correctly!');
+      process.exit(0);
+    } else {
+      console.log('❌ Some endpoints have issues.');
+      process.exit(1);
+    }
+  });
 } 
