@@ -149,23 +149,32 @@ export default function Dashboard() {
     setChatMessage('');
 
     try {
-      // Smart LLM-like responses based on user input and performance data
-      const responses = [
-        `Based on your current performance (${performance.averageScore}% average), I recommend focusing on ${message.toLowerCase().includes('improve') ? 'practice questions in areas where you scored lower. Review the explanations thoroughly and consider retaking quizzes on challenging topics.' : 'building a strong foundation in core concepts before moving to advanced topics.'}`,
-        `Looking at your ${performance.totalAttempts} quiz attempts, you're making steady progress. For ${message.toLowerCase().includes('math') ? 'mathematics' : message.toLowerCase().includes('science') ? 'science' : 'this subject'}, try breaking down complex problems into smaller steps and practice regularly.`,
-        `Your best score of ${performance.bestScore}% shows you can excel! To maintain this level, ${message.toLowerCase().includes('consistency') ? 'establish a regular study routine and review previous quiz explanations to reinforce learning.' : 'focus on understanding the underlying concepts rather than memorizing answers.'}`,
-        `From analyzing your quiz history, I notice you perform well in ${performance.averageScore > 70 ? 'most areas' : 'some areas'}. To improve further, ${message.toLowerCase().includes('strategy') ? 'try creating quizzes on related topics to build comprehensive understanding.' : 'review questions you answered incorrectly and understand the reasoning behind correct answers.'}`,
-        `Based on your learning patterns, here's my recommendation: ${message.toLowerCase().includes('help') ? 'Use the detailed explanations after each quiz as study guides. Focus on topics where your scores are lower and practice with different difficulty levels.' : 'You\'re on the right track! Consider exploring topics outside your comfort zone to expand your knowledge base.'}`
-      ];
-      
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      // Simulate AI processing time
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+      // Call the chatbot API
+      const response = await fetch('/api/chatbot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          userContext: {
+            totalAttempts: performance.totalAttempts,
+            averageScore: performance.averageScore,
+            bestScore: performance.bestScore,
+            recentActivity: performance.recentActivity
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chatbot API error: ${response.status}`);
+      }
+
+      const data = await response.json();
       
       const aiMessage: { role: 'user' | 'assistant'; content: string; timestamp: Date } = { 
         role: 'assistant', 
-        content: randomResponse, 
+        content: data.response, 
         timestamp: new Date() 
       };
       

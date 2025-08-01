@@ -62,11 +62,31 @@ export async function generateQuiz(formData: {
 
 // Quiz operations
 export async function fetchQuiz(quizId: string, tenant_id: string, token?: string) {
-  const res = await fetch(`${API_BASE}/quizzes/${quizId}?tenant_id=${tenant_id}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {}
-  });
-  if (!res.ok) throw new Error('Failed to fetch quiz');
-  return res.json();
+  console.log('🔍 Fetching quiz:', { quizId, tenant_id });
+  
+  try {
+    const url = `${API_BASE}/quizzes/${quizId}?tenant_id=${tenant_id}`;
+    console.log('📡 Making request to:', url);
+    
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    
+    console.log('📡 Response status:', res.status);
+    
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ Quiz fetch error:', res.status, errorText);
+      throw new Error(`Failed to fetch quiz: ${res.status} - ${errorText}`);
+    }
+    
+    const data = await res.json();
+    console.log('✅ Quiz fetched successfully:', { id: data.id, title: data.title, questions: data.questions?.length });
+    return data;
+  } catch (error) {
+    console.error('❌ Quiz fetch error:', error);
+    throw error;
+  }
 }
 
 export async function submitQuiz(submission: {

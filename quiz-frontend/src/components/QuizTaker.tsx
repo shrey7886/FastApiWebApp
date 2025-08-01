@@ -101,14 +101,24 @@ export default function QuizTaker() {
     try {
       setLoading(true);
       setError(null);
+      console.log('🔄 Loading quiz:', { quizId, tenant_id: user?.tenant_id || 'default' });
+      
       const quizData = await fetchQuiz(quizId, user?.tenant_id || 'default', token || undefined);
+      
+      console.log('✅ Quiz loaded successfully:', { 
+        id: quizData.id, 
+        title: quizData.title, 
+        questions: quizData.questions?.length,
+        duration: quizData.duration 
+      });
+      
       setQuiz(quizData);
       setTimeLeft(quizData.duration * 60); // Convert minutes to seconds
       startTimeRef.current = Date.now();
       setLoading(false);
     } catch (error) {
-      console.error('Error loading quiz:', error);
-      setError('Failed to load quiz. Please try again.');
+      console.error('❌ Error loading quiz:', error);
+      setError(`Failed to load quiz: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setLoading(false);
     }
   };
