@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateQuizQuestions } from '@/lib/quiz-generator';
+import { quizStorage, quizStorageHelpers } from '@/lib/quiz-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,37 +21,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`🎯 Generating quiz for topic: "${topic}" using Gemini as primary model`);
+    console.log(`🎯 Generating quiz for topic: "${topic}" using enhanced fallback model`);
 
-    // Always use fallback questions for reliability
-    const questions = generateFallbackQuestions(topic, difficulty, num_questions);
-    console.log(`✅ Generated ${questions.length} fallback questions for topic: "${topic}"`);
+    // Generate questions with better variety
+    const questions = generateEnhancedQuestions(topic, difficulty, num_questions);
+    console.log(`✅ Generated ${questions.length} enhanced questions for topic: "${topic}"`);
 
-    // Transform questions to the correct format for QuizTaker
-    const transformedQuestions = questions.map((q: any, index: number) => ({
-      id: q.id || `q_${Date.now()}_${index}`,
-      question_text: q.question_text,
-      option_a: q.answers?.[0]?.answer_text || 'Option A',
-      option_b: q.answers?.[1]?.answer_text || 'Option B',
-      option_c: q.answers?.[2]?.answer_text || 'Option C',
-      option_d: q.answers?.[3]?.answer_text || 'Option D',
-      correct_answer: q.correct_answer || q.answers?.find((a: any) => a.correct)?.answer_text || 'A',
-      explanation: q.explanation || 'No explanation provided.'
-    }));
-
-    // Create quiz object
+    // Create quiz object with unique ID
+    const quizId = `quiz_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const quiz = {
-      id: Date.now().toString(),
+      id: quizId,
       title: `${topic} Quiz`,
       description: `A ${difficulty} quiz about ${topic}`,
       topic,
       difficulty,
       num_questions,
-      duration,
-      tenant_id,
-      questions: transformedQuestions, // Use transformed questions
+      duration: duration || 10,
+      tenant_id: tenant_id || 'default',
+      questions: questions,
       created_at: new Date().toISOString()
     };
+
+    // Store the quiz in memory for later retrieval
+    quizStorageHelpers.storeQuiz(quizId, quiz);
 
     console.log('🎉 Quiz created successfully, returning response');
     return NextResponse.json(quiz);
@@ -60,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Return a guaranteed fallback quiz
     const fallbackQuiz = {
-      id: Date.now().toString(),
+      id: `fallback_${Date.now()}`,
       title: 'Sample Quiz',
       description: 'A sample quiz with basic questions',
       topic: 'General Knowledge',
@@ -103,14 +95,17 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString()
     };
 
+    // Store fallback quiz as well
+    quizStorageHelpers.storeQuiz(fallbackQuiz.id, fallbackQuiz);
+
     console.log('🔄 Returning fallback quiz due to error');
     return NextResponse.json(fallbackQuiz);
   }
 }
 
-// Fallback question generator (moved here from quiz-generator.ts)
-function generateFallbackQuestions(topic: string, difficulty: string, num_questions: number) {
-  console.log(`🔄 Generating ${num_questions} fallback questions for "${topic}"`);
+// Enhanced question generator with better variety
+function generateEnhancedQuestions(topic: string, difficulty: string, num_questions: number) {
+  console.log(`🔄 Generating ${num_questions} enhanced questions for "${topic}"`);
 
   const questions = [];
   const questionTemplates = [
@@ -123,37 +118,55 @@ function generateFallbackQuestions(topic: string, difficulty: string, num_questi
     `What distinguishes ${topic} from similar concepts?`,
     `What is the key principle behind ${topic}?`,
     `How would you best explain ${topic} to someone?`,
-    `What makes ${topic} unique or special?`
+    `What makes ${topic} unique or special?`,
+    `What are the main components of ${topic}?`,
+    `How has ${topic} evolved over time?`,
+    `What are the current trends in ${topic}?`,
+    `What challenges are associated with ${topic}?`,
+    `What are the best practices for ${topic}?`
+  ];
+
+  const answerTemplates = [
+    `The core concept and main purpose of ${topic}`,
+    `A fundamental principle that defines ${topic}`,
+    `The primary methodology used in ${topic}`,
+    `The most effective approach to ${topic}`,
+    `The essential framework for understanding ${topic}`,
+    `The key innovation in ${topic}`,
+    `The standard practice in ${topic}`,
+    `The theoretical foundation of ${topic}`,
+    `The practical application of ${topic}`,
+    `The advanced technique in ${topic}`
   ];
 
   for (let i = 0; i < num_questions; i++) {
     const template = questionTemplates[i % questionTemplates.length];
+    const correctAnswer = answerTemplates[i % answerTemplates.length];
+    
+    // Generate wrong answers
+    const wrongAnswers = [
+      `A secondary or supporting aspect of ${topic}`,
+      `An unrelated or tangential concept`,
+      `A historical or background reference`,
+      `A common misconception about ${topic}`,
+      `An outdated approach to ${topic}`,
+      `A specialized niche within ${topic}`,
+      `A theoretical concept related to ${topic}`,
+      `A practical limitation of ${topic}`
+    ];
+
+    // Shuffle wrong answers and take first 3
+    const shuffledWrong = wrongAnswers.sort(() => Math.random() - 0.5).slice(0, 3);
+    const allAnswers = [correctAnswer, ...shuffledWrong].sort(() => Math.random() - 0.5);
+
     questions.push({
       id: `q_${Date.now()}_${i}`,
       question_text: template,
-      answers: [
-        {
-          id: `a_${Date.now()}_${i}_1`,
-          answer_text: `The core concept and main purpose of ${topic}`,
-          correct: true
-        },
-        {
-          id: `a_${Date.now()}_${i}_2`,
-          answer_text: `A secondary or supporting aspect of ${topic}`,
-          correct: false
-        },
-        {
-          id: `a_${Date.now()}_${i}_3`,
-          answer_text: `An unrelated or tangential concept`,
-          correct: false
-        },
-        {
-          id: `a_${Date.now()}_${i}_4`,
-          answer_text: `A historical or background reference`,
-          correct: false
-        }
-      ],
-      correct_answer: `The core concept and main purpose of ${topic}`,
+      option_a: allAnswers[0],
+      option_b: allAnswers[1],
+      option_c: allAnswers[2],
+      option_d: allAnswers[3],
+      correct_answer: correctAnswer,
       explanation: `This represents the fundamental understanding and primary purpose of ${topic}, which is essential for mastering this subject.`
     });
   }

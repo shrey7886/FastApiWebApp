@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { quizStorageHelpers } from '@/lib/quiz-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,16 @@ export async function GET(
       throw new Error('Invalid quiz ID');
     }
 
-    // Generate dynamic quiz based on ID
+    // First, try to get the quiz from storage
+    const storedQuiz = quizStorageHelpers.getQuiz(quizId);
+    if (storedQuiz) {
+      console.log('✅ Quiz found in storage:', { id: quizId, title: storedQuiz.title });
+      return NextResponse.json(storedQuiz);
+    }
+
+    console.log('🔍 Quiz not found in storage, generating dynamic quiz...');
+
+    // If not found in storage, generate a dynamic quiz based on ID
     const quizNumber = parseInt(quizId) % 1000; // Use modulo to create variety
     const topics = ['Mathematics', 'Science', 'History', 'Geography', 'Literature', 'Technology', 'Art', 'Music', 'Sports', 'Cooking'];
     const difficulties = ['easy', 'medium', 'hard'];
@@ -43,6 +53,9 @@ export async function GET(
       questions: questions,
       created_at: new Date().toISOString()
     };
+
+    // Store the generated quiz for future requests
+    quizStorageHelpers.storeQuiz(quizId, quiz);
 
     console.log('✅ Quiz fetched successfully:', { id: quizId, topic: selectedTopic, questions: questionCount });
     return NextResponse.json(quiz);
@@ -113,6 +126,9 @@ export async function GET(
       ],
       created_at: new Date().toISOString()
     };
+
+    // Store fallback quiz as well
+    quizStorageHelpers.storeQuiz(fallbackQuiz.id, fallbackQuiz);
 
     console.log('🔄 Returning fallback quiz due to error');
     return NextResponse.json(fallbackQuiz);
